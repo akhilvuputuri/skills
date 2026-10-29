@@ -9,11 +9,11 @@ const ROOT = path.resolve(__dirname, "..");
 // The repository root is a single plugin, like addyosmani/agent-skills and obra/superpowers.
 // Its instruction-only skills live at skills/<skill>/SKILL.md, the layout Claude Code, Codex
 // and `npx skills` all discover. Handoff needs the bundled native addon, which only the
-// release installer provides, so it lives in handoff/ and is hidden from `npx skills`.
+// release installer provides, so it is built on first use in a plugin install and hidden from `npx skills`.
 const PLUGIN = "skills";
 const WORKFLOW_SKILLS = ["adopt", "experiment", "incident", "independent-review", "journal", "preflight", "ship"];
-const SKILLS = [...WORKFLOW_SKILLS, "ios-design"];
 const HANDOFF_SKILLS = ["publish-handoff", "resume-handoff"];
+const SKILLS = [...WORKFLOW_SKILLS, "ios-design", ...HANDOFF_SKILLS];
 // What the plugin ships to agents. Claude Code copies the whole root, but only these paths
 // change what a session loads, so they define the plugin's content for versioning.
 const CONTENT = [".claude-plugin/plugin.json", ".codex-plugin", "CORE.md", "hooks", "skills"];
@@ -24,7 +24,7 @@ const CONTENT = [".claude-plugin/plugin.json", ".codex-plugin", "CORE.md", "hook
 const ROOT_ENTRIES = [
   ...CONTENT.map((item) => item.split("/")[0]),
   ".agents", ".github", ".gitignore", "AGENTS.md", "README.md", "REVIEW.md", "VERSION",
-  "docs", "evals", "handoff", "native", "package.json", "schema", "tests", "tools",
+  "docs", "evals", "native", "package.json", "schema", "tests", "tools",
 ];
 // Local state that never reaches GitHub: git, Finder, build output, and the per-checkout
 // .claude/ and .codex/ folders that agents create. Neither agent loads those from a plugin root.
@@ -46,11 +46,16 @@ function walk(dir, out = []) {
   }
   return out;
 }
+// Git stores a symlink as its target text, so the digest does too.
+function contentBytes(relative) {
+  const full = path.join(ROOT, relative);
+  return fs.lstatSync(full).isSymbolicLink() ? Buffer.from(fs.readlinkSync(full)) : fs.readFileSync(full);
+}
 function contentFiles(root) {
   const files = [];
   for (const item of CONTENT) {
     const full = path.join(root, item);
-    if (fs.lstatSync(full).isDirectory()) files.push(...walk(full).filter((f) => fs.lstatSync(f).isFile()));
+    if (fs.lstatSync(full).isDirectory()) files.push(...walk(full).filter((f) => !fs.lstatSync(f).isDirectory()));
     else files.push(full);
   }
   return files.map((f) => path.relative(root, f).split(path.sep).join("/")).sort();
@@ -85,22 +90,38 @@ function assertPlainFrontmatter(text, name) {
   assert.deepEqual(keys, ["name", "description"], name + ": frontmatter may hold only name and description");
 }
 
-test("skills/ holds exactly the instruction-only skills", () => {
+// Handoff's helper and reference are development symlinks into tools/ and docs/. Claude Code
+// keeps them as symlinks in the plugin cache, so they resolve inside the plugin root.
+const HANDOFF_LINKS = {
+  "scripts/handoff.cjs": "../../../tools/handoff.cjs",
+  "references/handoff.md": "../../../docs/handoff.md",
+};
+
+test("skills/ holds exactly the instruction-only skills and Handoff's linked helper", () => {
   const dir = path.join(ROOT, "skills");
   const names = fs
     .readdirSync(dir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name);
   assert.deepEqual(names.sort(), [...SKILLS].sort());
+  const links = [];
   for (const file of walk(dir)) {
     const info = fs.lstatSync(file);
-    assert.ok(!info.isSymbolicLink(), "skill files cannot be symlinks: " + file);
-    assert.ok(info.isDirectory() || file.endsWith(".md"), "unexpected skill file: " + file);
+    if (info.isSymbolicLink()) links.push(path.relative(dir, file).split(path.sep).join("/"));
+    else assert.ok(info.isDirectory() || file.endsWith(".md"), "unexpected skill file: " + file);
   }
+  const expected = HANDOFF_SKILLS.flatMap((name) => Object.keys(HANDOFF_LINKS).map((rel) => name + "/" + rel));
+  assert.deepEqual(links.sort(), expected.sort(), "only Handoff's helper and reference may be symlinks");
+  for (const name of HANDOFF_SKILLS)
+    for (const [rel, target] of Object.entries(HANDOFF_LINKS)) {
+      const link = path.join(dir, name, rel);
+      assert.equal(fs.readlinkSync(link), target);
+      assert.ok(fs.statSync(link).isFile(), "dangling link: " + link);
+    }
   for (const name of names) {
     const skill = fs.readFileSync(path.join(dir, name, "SKILL.md"), "utf8");
     assert.match(skill, new RegExp("^---\\nname: " + name + "\\ndescription: \\S"));
-    assertPlainFrontmatter(skill, name);
+    if (!HANDOFF_SKILLS.includes(name)) assertPlainFrontmatter(skill, name);
   }
 });
 
@@ -151,14 +172,10 @@ test("the Codex marketplace and manifest mirror the Claude marketplace", () => {
   assert.deepEqual(listing(".codex-plugin"), ["hooks.json", "plugin.json"]);
 });
 
-test("handoff/ holds only Handoff, hidden from `npx skills` discovery", () => {
-  const names = fs
-    .readdirSync(path.join(ROOT, "handoff"), { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name);
-  assert.deepEqual(names.sort(), [...HANDOFF_SKILLS].sort());
+test("Handoff ships in skills/ for the plugin, hidden from `npx skills` discovery", () => {
+  assert.ok(!fs.existsSync(path.join(ROOT, "handoff")), "Handoff lives in skills/, not a separate folder");
   for (const name of HANDOFF_SKILLS) {
-    const skill = fs.readFileSync(path.join(ROOT, "handoff", name, "SKILL.md"), "utf8");
+    const skill = fs.readFileSync(path.join(ROOT, "skills", name, "SKILL.md"), "utf8");
     assert.match(frontmatter(skill, name), /\nmetadata:\n  internal: true$/);
   }
 });
@@ -185,7 +202,7 @@ function digest(entries) {
 
 test("the plugin's content matches the digest recorded for its version", () => {
   const releases = readJson(".claude-plugin/releases.json");
-  const actual = digest(contentFiles(ROOT).map((f) => [f, fs.readFileSync(path.join(ROOT, f))]));
+  const actual = digest(contentFiles(ROOT).map((f) => [f, contentBytes(f)]));
   assert.equal(
     (releases[plugin.name] || {})[plugin.version],
     actual,

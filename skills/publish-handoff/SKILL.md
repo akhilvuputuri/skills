@@ -5,7 +5,7 @@ metadata:
   internal: true
 ---
 
-Create a task-specific continuation record using only context available to this agent. “Publish” means durable local storage. Use the bundled `scripts/handoff.cjs` with Node 22+; substitute the actual absolute skill directory in commands. If the runtime is missing, follow the akhilvuputuri/skills repository's offline installer rather than downloading dependencies. Read [handoff reference](references/handoff.md) for command syntax and the record contract when constructing a record.
+Create a task-specific continuation record using only context available to this agent. “Publish” means durable local storage. Use the bundled `scripts/handoff.cjs` with Node 22+; substitute the actual absolute skill directory in commands. The first run in a plugin install compiles the bundled filesystem addon with the local C compiler and Node headers; if that fails, use the akhilvuputuri/skills release installer rather than downloading dependencies. Read [handoff reference](references/handoff.md) for command syntax and the record contract when constructing a record.
 
 ## Select and extract
 

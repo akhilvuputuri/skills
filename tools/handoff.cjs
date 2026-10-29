@@ -261,6 +261,15 @@ function validate(record) {
     fail("Record exceeds the 2 MiB limit");
   return record;
 }
+// A plugin install from the repository has no compiled addon. Build it once from the bundled
+// source with the local C compiler and Node headers; nothing is downloaded. Compiler output
+// goes to stderr so command output stays machine-readable.
+function buildIfMissing(filename) {
+  if (fs.existsSync(filename) || !fs.existsSync(path.join(__dirname, "build-native.cjs")))
+    return filename;
+  const built = require("./build-native.cjs").build({ stdio: ["ignore", 2, 2] });
+  return built;
+}
 function native() {
   if (
     !["darwin", "linux"].includes(process.platform) ||
@@ -277,7 +286,7 @@ function native() {
         "posix.node",
       );
   try {
-    return require(filename);
+    return require(buildIfMissing(filename));
   } catch (error) {
     fail(
       "Filesystem addon unavailable for this platform. Install the matching release, or run npm run build:native in a development checkout. " +

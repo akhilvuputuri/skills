@@ -1,5 +1,17 @@
 # Validation status
 
+## Handoff in the plugin, skills 0.3.0 — 30 October 2026
+
+- **Change:** importing the repository as a Claude Code plugin gave no Handoff, because Handoff lived in `handoff/`, outside the plugin's `skills/` scan.
+  - `publish-handoff` and `resume-handoff` moved to `skills/`. They keep `metadata.internal: true`, so `npx skills` still hides them. Their helper and reference stay development symlinks into `tools/` and `docs/`.
+  - `tools/handoff.cjs` builds the filesystem addon on first use when it is missing and `tools/build-native.cjs` is beside it, using the local C compiler and Node headers. Nothing is downloaded. Compiler output goes to stderr. Release installs ship the addon prebuilt and never build.
+  - The installer and release build read the new skill path. The marketplace test now allows exactly Handoff's two symlinks per skill (and checks they resolve), and the content digest reads symlinks as link text, as git stores them.
+  - Version 0.3.0 in all four manifests; README pins and docs updated; digest recorded.
+- **Checks** (30 October 2026, macOS arm64, Node 22): `npm test` 47/47; `claude plugin validate .` passes.
+  - **Claude Code** (isolated `CLAUDE_CONFIG_DIR`, install from this branch): `claude plugin details` lists 10 skills including both Handoff skills. The plugin cache keeps the symlinks. With the addon removed, the first `list` built `native/darwin-arm64/posix.node` and returned JSON; `template` then ran. With `HANDOFF_NODE_HEADERS` pointing nowhere, the helper failed with the headers message and built nothing.
+- **Not verified:** Codex (no `codex` binary on this machine) and whether it keeps the symlinks; installing from GitHub (tag does not exist yet); hosts without a C compiler or Node headers, which see the error above; a read-only plugin cache. Digest scope is unchanged, so edits to `tools/` or `docs/` alone do not require a version bump.
+- **Independent review:** not yet run for this head.
+
 ## One root plugin, skills 0.2.0 — 15 October 2026
 
 - **Change:** the repository root is now a single plugin, `skills@skills`, laid out like addyosmani/agent-skills and obra/superpowers (both checked on GitHub: one root plugin each, with `skills/` at the top). Before, it shipped two plugins under `plugins/`.

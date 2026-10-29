@@ -1,6 +1,6 @@
 {
   "name": "skills",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Engineering workflow for coding agents (fresh-state preflight, independent exact-head review, verified release, evidence-labelled journal, incident and experiment method, repository adoption) and native iPhone/iPad interface design from Apple's Human Interface Guidelines",
   "author": {
     "name": "Akhil Vuputuri",

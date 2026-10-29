@@ -10,7 +10,7 @@ Any agent (Claude Code, Codex, Cursor, Copilot, Gemini and [70+ more](https://gi
 npx skills add akhilvuputuri/skills
 ```
 
-This installs the skills in [`skills/`](skills). Add `--list` to browse, `--skill <name>` to pick, `-g` for every project, and `-a <agent>` to choose agents. For a reviewed release instead of the default branch, use a tag URL such as `npx skills add https://github.com/akhilvuputuri/skills/tree/skills--v0.2.0`.
+This installs the skills in [`skills/`](skills). Add `--list` to browse, `--skill <name>` to pick, `-g` for every project, and `-a <agent>` to choose agents. For a reviewed release instead of the default branch, use a tag URL such as `npx skills add https://github.com/akhilvuputuri/skills/tree/skills--v0.3.0`.
 
 **Claude Code:** the plugin is recommended, because only the Claude plugin adds the workflow's always-on core rules (a SessionStart hook). The Codex plugin deliberately ships no hooks.
 
@@ -26,13 +26,13 @@ codex plugin marketplace add akhilvuputuri/skills
 codex plugin add skills@skills
 ```
 
-**Handoff** needs a compiled helper per platform, so it installs only through the [release installer](#install-without-cloning). `npx skills` hides it.
+**Handoff** needs a compiled filesystem addon per platform. The plugins include the skills and build the addon on first use, with the local C compiler and Node headers (no download); the [release installer](#install-without-cloning) ships it prebuilt. `npx skills` hides Handoff, because a copied skill has no addon source to build.
 
 | Skills | Use |
 | --- | --- |
 | `preflight`, `independent-review`, `ship`, `journal`, `incident`, `experiment`, `adopt` | Akhil's engineering workflow for coding agents, plus always-on core rules in Claude Code |
 | `ios-design` | Audit or refine native iPhone/iPad interfaces using a source-linked digest of Apple's Human Interface Guidelines: Liquid Glass, Dynamic Type, accessibility, components, writing, app icons, and reading/offline-first patterns |
-| `publish-handoff`, `resume-handoff` (release installer, in [`handoff/`](handoff)) | Save the context for one task, then resume it in another local agent session |
+| `publish-handoff`, `resume-handoff` (in the Claude Code and Codex plugins; or the release installer) | Save the context for one task, then resume it in another local agent session |
 
 ### Moving from earlier installs
 
@@ -70,20 +70,20 @@ Commit this to the repository's `.claude/settings.json`:
 ```json
 {
   "extraKnownMarketplaces": {
-    "skills": { "source": { "source": "github", "repo": "akhilvuputuri/skills", "ref": "skills--v0.2.0" } }
+    "skills": { "source": { "source": "github", "repo": "akhilvuputuri/skills", "ref": "skills--v0.3.0" } }
   },
   "enabledPlugins": { "skills@skills": true }
 }
 ```
 
-For Codex, each contributor runs `codex plugin marketplace add akhilvuputuri/skills@skills--v0.2.0` and then `codex plugin add skills@skills` once. The repository's `.codex/config.toml` then keeps the plugin enabled in that trusted project. Enabling it there does not install it.
+For Codex, each contributor runs `codex plugin marketplace add akhilvuputuri/skills@skills--v0.3.0` and then `codex plugin add skills@skills` once. The repository's `.codex/config.toml` then keeps the plugin enabled in that trusted project. Enabling it there does not install it.
 
 ```toml
 [plugins."skills@skills"]
 enabled = true
 ```
 
-The current release is `skills--v0.2.0`. Pin only release tags, never a branch.
+The current release is `skills--v0.3.0`. Pin only release tags, never a branch.
 
 ### Releasing
 

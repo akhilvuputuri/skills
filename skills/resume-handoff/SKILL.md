@@ -5,7 +5,7 @@ metadata:
   internal: true
 ---
 
-Use the bundled `scripts/handoff.cjs` with Node 22+ and the current project's local store. Substitute the actual absolute skill directory in commands. Read [handoff reference](references/handoff.md) when command syntax, project mapping, schema, or revision selection needs clarification. If the helper is missing, use the akhilvuputuri/skills repository's offline installer.
+Use the bundled `scripts/handoff.cjs` with Node 22+ and the current project's local store. Substitute the actual absolute skill directory in commands. Read [handoff reference](references/handoff.md) when command syntax, project mapping, schema, or revision selection needs clarification. The first run in a plugin install compiles the bundled filesystem addon with the local C compiler and Node headers; if that fails, use the akhilvuputuri/skills release installer.
 
 ## Retrieve
 
