@@ -117,7 +117,7 @@ function install(target, names = SKILLS, replace = false) {
       fs.mkdirSync(path.join(stage, "scripts"));
       fs.mkdirSync(path.join(stage, "references"));
       for (const [source, relative] of [
-        ["handoff/" + name + "/SKILL.md", "SKILL.md"],
+        ["skills/" + name + "/SKILL.md", "SKILL.md"],
         ["tools/handoff.cjs", "scripts/handoff.cjs"],
         [
           `native/${process.platform}-${process.arch}/posix.node`,

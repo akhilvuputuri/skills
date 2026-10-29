@@ -64,7 +64,7 @@ function build(output) {
     "schema/handoff.schema.json",
     "docs/handoff.md",
     "native/" + platform + "/posix.node",
-    ...SKILLS.map((name) => "handoff/" + name + "/SKILL.md"),
+    ...SKILLS.map((name) => "skills/" + name + "/SKILL.md"),
   ];
   const payload = Object.fromEntries(
     files.map((relative) => [

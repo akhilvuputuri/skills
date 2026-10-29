@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const root = path.resolve(__dirname, "..");
-function build() {
+function build(options = {}) {
   if (!["darwin", "linux"].includes(process.platform))
     throw new Error("Native filesystem addon supports macOS/Linux only");
   const headers =
@@ -40,7 +40,7 @@ function build() {
   const result = spawnSync(
     process.env.CC || "cc",
     [...flags, path.join(root, "native/posix.c"), "-o", output],
-    { stdio: "inherit" },
+    { stdio: options.stdio || "inherit" },
   );
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error("Native addon build failed");
