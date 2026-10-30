@@ -13,14 +13,14 @@ The whole conversation, not only the current sub-issue. The reader must see the 
 
 - `objective`: `{goal, constraints: [string]}`. The conversation's overall goal, plus hard constraints in the user's own words.
 - `work_state`: `[{item, status, note, links: [string]}]`. Every workstream the conversation touched, one line each, with status `done`, `active`, `blocked`, `parked` or `open`. Give the reason for blocked and parked items.
-- `focus`: `{item, notes: [{text, basis}]}`. The item the next session works on, and the only part written in depth. It is what the user said the next session is for, else the item the conversation ended on. Ask one question only when the choice is unclear and changes the brief.
+- `focus`: `{item, notes: [{text, basis}]}`, where `item` repeats one `work_state` item's text exactly. The item the next session works on, and the only part written in depth. It is what the user said the next session is for, else the item the conversation ended on. Ask one question only when the choice is unclear and changes the brief.
 - `decisions`: `[{statement, status, reason}]`; rejected ones need a reason. `done`: completed work the reader must not redo. `open_requests`: unanswered user requests, verbatim. `links`: `[{ref, why}]`. `next_action`: exactly one.
 
 Use progressive disclosure. When a PR, issue, commit, doc or file already holds the detail, put it in `links` or the item's `links` with one line on why to read it, and do not restate it. A done item usually needs only its link. Spend words only on what exists nowhere else: decisions and their reasons, rejected approaches, user corrections, unverified hypotheses, and the current state of the focus.
 
 ## How to write it
 
-- Terse single-line items, no prose paragraphs. Aim for 150–500 rendered words. The helper rejects oversized fields and lists.
+- Terse single-line items, no prose paragraphs. Stay under about 700 rendered words for a long multi-issue conversation, and far less for simple work. The helper rejects oversized fields and lists.
 - Tag each focus note `user`, `observed`, `hypothesis` or `assumed`. Never upgrade an assumption or hypothesis into a fact. Do not invent tests, results or acceptance criteria.
 - Later corrections replace earlier claims. Keep the corrected value only.
 - Self-contained: no "see above". Leave out instruction-file conventions, environment details, conversation play-by-play, secrets and credentials.
