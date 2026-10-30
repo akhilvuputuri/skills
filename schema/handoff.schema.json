@@ -1,91 +1,329 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Handoff revision",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["schema_version", "handoff_id", "revision_id", "created_at", "project", "issue_reference", "predecessor_revision_ids", "scope", "continuation", "findings", "decisions", "code_state", "verification", "dependencies", "provenance"],
-  "properties": {
-    "schema_version": {"const": 1},
-    "handoff_id": {"$ref": "#/$defs/id"},
-    "revision_id": {"$ref": "#/$defs/id"},
-    "created_at": {"type": "string", "format": "date-time"},
-    "project": {
-      "type": "object", "additionalProperties": false,
-      "required": ["id", "root", "git_common_dir", "label"],
-      "properties": {
-        "id": {"$ref": "#/$defs/id"}, "root": {"type": "string", "minLength": 1},
-        "git_common_dir": {"$ref": "#/$defs/nullableString"}, "label": {"type": "string", "minLength": 1}
-      }
-    },
-    "issue_reference": {"$ref": "#/$defs/nullableString"},
-    "predecessor_revision_ids": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
-    "scope": {
-      "type": "object", "additionalProperties": false,
-      "required": ["title", "task", "goal", "constraints", "acceptance_criteria", "boundaries"],
-      "properties": {
-        "title": {"type": "string", "minLength": 1}, "task": {"type": "string", "minLength": 1}, "goal": {"type": "string", "minLength": 1},
-        "constraints": {"$ref": "#/$defs/strings"}, "acceptance_criteria": {"$ref": "#/$defs/strings"}, "boundaries": {"$ref": "#/$defs/strings"}
-      }
-    },
-    "continuation": {
-      "type": "object", "additionalProperties": false,
-      "required": ["status", "completed", "next_actions", "blockers", "open_questions"],
-      "properties": {
-        "status": {"type": "string", "minLength": 1}, "completed": {"$ref": "#/$defs/strings"},
-        "next_actions": {"$ref": "#/$defs/strings"}, "blockers": {"$ref": "#/$defs/strings"}, "open_questions": {"$ref": "#/$defs/strings"}
-      }
-    },
-    "findings": {"type": "array", "items": {
-      "type": "object", "additionalProperties": false,
-      "required": ["statement", "classification", "evidence", "evidence_limitations"],
-      "properties": {
-        "statement": {"type": "string", "minLength": 1}, "classification": {"enum": ["requirement", "observed", "hypothesis", "proposal"]},
-        "evidence": {"$ref": "#/$defs/strings"}, "evidence_limitations": {"$ref": "#/$defs/strings"}
-      }
-    }},
-    "decisions": {"type": "array", "items": {
-      "type": "object", "additionalProperties": false,
-      "required": ["statement", "status", "reason", "established_by", "evidence"],
-      "properties": {
-        "statement": {"type": "string", "minLength": 1}, "status": {"enum": ["accepted", "rejected", "unresolved"]},
-        "reason": {"$ref": "#/$defs/nullableString"}, "established_by": {"$ref": "#/$defs/nullableString"}, "evidence": {"$ref": "#/$defs/strings"}
-      }
-    }},
-    "code_state": {
-      "type": "object", "additionalProperties": false,
-      "required": ["base_commit", "branch", "relevant_paths", "dirty_paths", "unpublished_work", "pr_links", "artifacts", "limitations"],
-      "properties": {
-        "base_commit": {"$ref": "#/$defs/nullableString"}, "branch": {"$ref": "#/$defs/nullableString"},
-        "relevant_paths": {"$ref": "#/$defs/strings"}, "dirty_paths": {"$ref": "#/$defs/strings"}, "unpublished_work": {"$ref": "#/$defs/strings"},
-        "pr_links": {"$ref": "#/$defs/strings"}, "artifacts": {"$ref": "#/$defs/strings"}, "limitations": {"$ref": "#/$defs/strings"}
-      }
-    },
-    "verification": {
-      "type": "object", "additionalProperties": false, "required": ["checks", "not_run"],
-      "properties": {
-        "checks": {"type": "array", "items": {
-          "type": "object", "additionalProperties": false, "required": ["command", "result", "summary", "commit", "checked_at"],
-          "properties": {
-            "command": {"type": "string", "minLength": 1}, "result": {"enum": ["pass", "fail", "unknown"]}, "summary": {"type": "string", "minLength": 1},
-            "commit": {"$ref": "#/$defs/nullableString"}, "checked_at": {"type": ["string", "null"], "format": "date-time"}
-          }
-        }},
-        "not_run": {"$ref": "#/$defs/strings"}
-      }
-    },
-    "dependencies": {"type": "array", "items": {
-      "type": "object", "additionalProperties": false, "required": ["description", "rationale", "references"],
-      "properties": {"description": {"type": "string", "minLength": 1}, "rationale": {"type": "string", "minLength": 1}, "references": {"$ref": "#/$defs/strings"}}
-    }},
-    "provenance": {
-      "type": "object", "additionalProperties": false, "required": ["agent", "session", "sources", "context_completeness", "uncertainties"],
-      "properties": {
-        "agent": {"$ref": "#/$defs/nullableString"}, "session": {"$ref": "#/$defs/nullableString"}, "sources": {"$ref": "#/$defs/strings"},
-        "context_completeness": {"enum": ["full", "partial", "unknown"]}, "uncertainties": {"$ref": "#/$defs/strings"}
-      }
-    }
-  },
+  "description": "A record is v1 or v2, selected by schema_version. v2 is written by current skills; v1 records remain readable.",
+  "oneOf": [{"$ref": "#/$defs/v1"}, {"$ref": "#/$defs/v2"}],
   "$defs": {
+    "v1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "handoff_id",
+        "revision_id",
+        "created_at",
+        "project",
+        "issue_reference",
+        "predecessor_revision_ids",
+        "scope",
+        "continuation",
+        "findings",
+        "decisions",
+        "code_state",
+        "verification",
+        "dependencies",
+        "provenance"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "handoff_id": {"$ref": "#/$defs/id"},
+        "revision_id": {"$ref": "#/$defs/id"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "project": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "root", "git_common_dir", "label"],
+          "properties": {
+            "id": {"$ref": "#/$defs/id"},
+            "root": {"type": "string", "minLength": 1},
+            "git_common_dir": {"$ref": "#/$defs/nullableString"},
+            "label": {"type": "string", "minLength": 1}
+          }
+        },
+        "issue_reference": {"$ref": "#/$defs/nullableString"},
+        "predecessor_revision_ids": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["title", "task", "goal", "constraints", "acceptance_criteria", "boundaries"],
+          "properties": {
+            "title": {"type": "string", "minLength": 1},
+            "task": {"type": "string", "minLength": 1},
+            "goal": {"type": "string", "minLength": 1},
+            "constraints": {"$ref": "#/$defs/strings"},
+            "acceptance_criteria": {"$ref": "#/$defs/strings"},
+            "boundaries": {"$ref": "#/$defs/strings"}
+          }
+        },
+        "continuation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "completed", "next_actions", "blockers", "open_questions"],
+          "properties": {
+            "status": {"type": "string", "minLength": 1},
+            "completed": {"$ref": "#/$defs/strings"},
+            "next_actions": {"$ref": "#/$defs/strings"},
+            "blockers": {"$ref": "#/$defs/strings"},
+            "open_questions": {"$ref": "#/$defs/strings"}
+          }
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["statement", "classification", "evidence", "evidence_limitations"],
+            "properties": {
+              "statement": {"type": "string", "minLength": 1},
+              "classification": {"enum": ["requirement", "observed", "hypothesis", "proposal"]},
+              "evidence": {"$ref": "#/$defs/strings"},
+              "evidence_limitations": {"$ref": "#/$defs/strings"}
+            }
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["statement", "status", "reason", "established_by", "evidence"],
+            "properties": {
+              "statement": {"type": "string", "minLength": 1},
+              "status": {"enum": ["accepted", "rejected", "unresolved"]},
+              "reason": {"$ref": "#/$defs/nullableString"},
+              "established_by": {"$ref": "#/$defs/nullableString"},
+              "evidence": {"$ref": "#/$defs/strings"}
+            }
+          }
+        },
+        "code_state": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "base_commit",
+            "branch",
+            "relevant_paths",
+            "dirty_paths",
+            "unpublished_work",
+            "pr_links",
+            "artifacts",
+            "limitations"
+          ],
+          "properties": {
+            "base_commit": {"$ref": "#/$defs/nullableString"},
+            "branch": {"$ref": "#/$defs/nullableString"},
+            "relevant_paths": {"$ref": "#/$defs/strings"},
+            "dirty_paths": {"$ref": "#/$defs/strings"},
+            "unpublished_work": {"$ref": "#/$defs/strings"},
+            "pr_links": {"$ref": "#/$defs/strings"},
+            "artifacts": {"$ref": "#/$defs/strings"},
+            "limitations": {"$ref": "#/$defs/strings"}
+          }
+        },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["checks", "not_run"],
+          "properties": {
+            "checks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["command", "result", "summary", "commit", "checked_at"],
+                "properties": {
+                  "command": {"type": "string", "minLength": 1},
+                  "result": {"enum": ["pass", "fail", "unknown"]},
+                  "summary": {"type": "string", "minLength": 1},
+                  "commit": {"$ref": "#/$defs/nullableString"},
+                  "checked_at": {"type": ["string", "null"], "format": "date-time"}
+                }
+              }
+            },
+            "not_run": {"$ref": "#/$defs/strings"}
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["description", "rationale", "references"],
+            "properties": {
+              "description": {"type": "string", "minLength": 1},
+              "rationale": {"type": "string", "minLength": 1},
+              "references": {"$ref": "#/$defs/strings"}
+            }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["agent", "session", "sources", "context_completeness", "uncertainties"],
+          "properties": {
+            "agent": {"$ref": "#/$defs/nullableString"},
+            "session": {"$ref": "#/$defs/nullableString"},
+            "sources": {"$ref": "#/$defs/strings"},
+            "context_completeness": {"enum": ["full", "partial", "unknown"]},
+            "uncertainties": {"$ref": "#/$defs/strings"}
+          }
+        }
+      }
+    },
+    "v2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "handoff_id",
+        "revision_id",
+        "created_at",
+        "project",
+        "predecessor_revision_ids",
+        "title",
+        "objective",
+        "work_state",
+        "focus",
+        "next_action"
+      ],
+      "properties": {
+        "schema_version": {"const": 2},
+        "handoff_id": {"$ref": "#/$defs/id"},
+        "revision_id": {"$ref": "#/$defs/id"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "project": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "root", "git_common_dir", "label"],
+          "properties": {
+            "id": {"$ref": "#/$defs/id"},
+            "root": {"type": "string", "minLength": 1},
+            "git_common_dir": {"$ref": "#/$defs/nullableString"},
+            "label": {"type": "string", "minLength": 1}
+          }
+        },
+        "predecessor_revision_ids": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "title": {"type": "string", "minLength": 1, "maxLength": 200},
+        "purpose": {"type": ["string", "null"], "maxLength": 400},
+        "objective": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["goal"],
+          "properties": {
+            "goal": {"type": "string", "minLength": 1, "maxLength": 600},
+            "constraints": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 400}}
+          }
+        },
+        "work_state": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["item", "status"],
+            "properties": {
+              "item": {"type": "string", "minLength": 1, "maxLength": 200},
+              "status": {"enum": ["done", "active", "blocked", "parked", "open"]},
+              "note": {"type": ["string", "null"], "maxLength": 400},
+              "links": {"type": "array", "maxItems": 8, "items": {"type": "string", "minLength": 1, "maxLength": 300}}
+            }
+          }
+        },
+        "focus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["item", "notes"],
+          "properties": {
+            "item": {"type": "string", "minLength": 1, "maxLength": 200},
+            "notes": {
+              "type": "array",
+              "maxItems": 30,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["text", "basis"],
+                "properties": {
+                  "text": {"type": "string", "minLength": 1, "maxLength": 500},
+                  "basis": {"enum": ["user", "observed", "hypothesis", "assumed"]}
+                }
+              }
+            }
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["statement", "status"],
+            "properties": {
+              "statement": {"type": "string", "minLength": 1, "maxLength": 400},
+              "status": {"enum": ["accepted", "rejected", "unresolved"]},
+              "reason": {"type": ["string", "null"], "maxLength": 400}
+            }
+          }
+        },
+        "done": {"type": "array", "maxItems": 30, "items": {"type": "string", "minLength": 1, "maxLength": 300}},
+        "open_requests": {"type": "array", "maxItems": 15, "items": {"type": "string", "minLength": 1, "maxLength": 600}},
+        "links": {
+          "type": "array",
+          "maxItems": 15,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ref", "why"],
+            "properties": {
+              "ref": {"type": "string", "minLength": 1, "maxLength": 500},
+              "why": {"type": "string", "minLength": 1, "maxLength": 300}
+            }
+          }
+        },
+        "code_state": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "base_commit": {"$ref": "#/$defs/nullableString"},
+            "branch": {"$ref": "#/$defs/nullableString"},
+            "relevant_paths": {"type": "array", "maxItems": 50, "items": {"type": "string", "minLength": 1, "maxLength": 500}},
+            "dirty_paths": {"type": "array", "maxItems": 200, "items": {"type": "string", "minLength": 1, "maxLength": 500}},
+            "unpublished_work": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 400}},
+            "limitations": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 400}}
+          }
+        },
+        "checks": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["command", "result", "summary"],
+            "properties": {
+              "command": {"type": "string", "minLength": 1, "maxLength": 500},
+              "result": {"enum": ["pass", "fail", "unknown"]},
+              "summary": {"type": "string", "minLength": 1, "maxLength": 400}
+            }
+          }
+        },
+        "gaps": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 400}},
+        "source": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["agent", "path"],
+          "properties": {
+            "agent": {"$ref": "#/$defs/nullableString"},
+            "session_id": {"$ref": "#/$defs/nullableString"},
+            "path": {"$ref": "#/$defs/nullableString"},
+            "sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+            "bytes": {"type": ["integer", "null"], "minimum": 0},
+            "lines": {"type": ["integer", "null"], "minimum": 0},
+            "format": {"$ref": "#/$defs/nullableString"}
+          }
+        },
+        "next_action": {"type": "string", "minLength": 1, "maxLength": 600}
+      }
+    },
     "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,79}$"},
     "nullableString": {"type": ["string", "null"]},
     "strings": {"type": "array", "items": {"type": "string", "minLength": 1}}

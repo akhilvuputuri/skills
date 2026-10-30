@@ -1,0 +1,25 @@
+{
+  "description": "Planted-fact probes for long-conversation.md. A reader that sees only the handoff answers each question; a grader compares the answer with `expect`. Score 1 for a correct answer, 0.5 for a partially correct one, 0 for missing or wrong. Answers that state a hypothesis as fact, or recommend a rejected approach, score 0 for that probe.",
+  "conversation": "long-conversation.md",
+  "request": "Write a handoff so I can continue in Codex tomorrow.",
+  "pass_rule": "A handoff passes when it scores at least 6 of 7 on parent probes, at least 6 of 7 on focus probes, and fails no guard probe (a guard probe fails when it scores 0). It is better than another handoff only when it passes and either scores higher in total or scores the same with fewer words.",
+  "probes": [
+    {"id": "P1", "layer": "parent", "question": "What is the overall goal and its deadline?", "expect": "Replace 5-minute polling of Paylane events with webhooks before the release freeze on 14 November."},
+    {"id": "P2", "layer": "parent", "question": "What is the hard rule for the whole migration, including its tie-break?", "expect": "No event processed twice and none dropped; if forced to choose, prefer a duplicate because losing a refund is worse."},
+    {"id": "P3", "layer": "parent", "question": "What is the status of signature verification, and where are its details?", "expect": "Done; merged in example/notify#212 (commit 4e1a9c2); details are in that PR."},
+    {"id": "P4", "layer": "parent", "question": "What is the status of the backfill work and why?", "expect": "Blocked: the Paylane replay API only covers 72 hours; waiting on support ticket PL-4471."},
+    {"id": "P5", "layer": "parent", "question": "What is the status of the dashboard work?", "expect": "Parked by the user until after cut-over."},
+    {"id": "P6", "layer": "parent", "question": "When can polling be turned off?", "expect": "Only after 7 days of parity in shadow mode; shadow mode has not started because the webhook endpoint is not deployed."},
+    {"id": "P7", "layer": "parent", "question": "What is the agreed order of the remaining migration steps?", "expect": "Finish idempotency, deploy webhooks in shadow mode beside polling, run 7 days of parity, then cut over."},
+    {"id": "F1", "layer": "focus", "question": "What is the deduplication key and why?", "expect": "event_id, because each retry gets a new delivery_id."},
+    {"id": "F2", "layer": "focus", "question": "How long does Paylane retry a failed delivery?", "expect": "3 days (the public doc's 24 hours is outdated)."},
+    {"id": "F3", "layer": "focus", "question": "Which deduplication design was accepted, and how does it guarantee atomicity?", "expect": "Postgres table processed_events with a unique event_id, inserted in the same transaction as the side effect."},
+    {"id": "F4", "layer": "focus", "question": "What is the current failing check and its measured rate?", "expect": "test_concurrent_duplicate_delivery failed 2 of 20 runs with a double side effect."},
+    {"id": "F5", "layer": "focus", "question": "What is the leading explanation for that failure, and how certain is it?", "expect": "Unverified hypothesis: the handler acks with 200 before the transaction commits; the test harness sharing a connection is an alternative."},
+    {"id": "F6", "layer": "focus", "question": "What exactly is the next action?", "expect": "Return 200 only after the transaction commits, then rerun the concurrency test 50 times; if failures persist, check the shared test connection."},
+    {"id": "F7", "layer": "focus", "question": "Is there any user request that is still unanswered? Quote it if so.", "expect": "Yes: check whether the refund handler uses the same code path; the user doesn't want a separate dedup there."},
+    {"id": "G1", "layer": "guard", "question": "Should the next agent use Redis SETNX for deduplication?", "expect": "No: rejected because Redis has no persistence here and a TTL would have to cover the 3-day retry window."},
+    {"id": "G2", "layer": "guard", "question": "Is the ack-before-commit explanation proven?", "expect": "No; the user said not to treat it as the cause until checked."},
+    {"id": "G3", "layer": "guard", "question": "Where do the migration rationale and the Redis rejection details live?", "expect": "In the description of draft PR example/notify#219 on branch webhooks-idempotency."}
+  ]
+}
