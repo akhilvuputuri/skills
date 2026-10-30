@@ -72,7 +72,11 @@
   - **Low:** a bare carriage return in a verbatim request was not split. It is now. Tested.
   - **Not blocking:** the `fstat` descriptor leak is closed. `U+2028` is accepted, which is harmless for Markdown.
   - **Limit:** helper-managed `project` fields keep the v1 definition.
-  - Re-review of the fixed head: REREVIEW_RESULT
+- **Third review** (Opus 5.5, same reviewer) of `d8a148c`: **APPROVE**.
+  - **Checks:** `npm test` 53/53. Every v2 agent-payload string leaf carries the single-line pattern. Bare-CR requests stay quoted. The `fingerprint` descriptor is closed on every path. A v1 record with multi-line text still validates and renders.
+  - **Low, not blocking:** a project directory name containing a newline can still break the rendered header, because helper-managed `project` fields keep the v1 definition (v1 rendering has the same behaviour). Recorded as a limit.
+  - **Not run by the reviewer:** macOS, real Codex or Claude transcripts, the model-graded eval, and Devin Review.
+- **Docs-only head after approval:** this record was filled in and the reference now names the `project` exception. Focused review of that delta: FOCUSED_RESULT
 
 ## One root plugin, skills 0.2.0 — 15 October 2026
 

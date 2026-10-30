@@ -62,7 +62,7 @@ Helper-managed fields: schema version, stable handoff ID, unique revision ID, UT
 | `source` | Null or a transcript pointer: `agent`, `path` (required, nullable), optional `session_id`, `sha256`, `bytes`, `lines`, `format`. |
 | `next_action` | Required; exactly one action. Rendered last. |
 
-v2 strings are single lines, except `open_requests`, whose lines all render inside the quote, so stored text cannot open a new section of the brief. Strings and lists have maximum lengths (for example 600 characters for `next_action`, 500 for a focus note) so the brief stays terse; the schema has the exact limits. Do not invent constraints, measurements, tests, or attribution. Records are limited to 2 MiB. Markdown is derivative and rendered from the same JSON; it is never parsed as an authoritative record or executed.
+v2 agent-payload strings are single lines, except `open_requests`, whose lines all render inside the quote, so stored text cannot open a new section of the brief. Helper-managed `project` fields come from the local filesystem and keep the v1 definition. Strings and lists have maximum lengths (for example 600 characters for `next_action`, 500 for a focus note) so the brief stays terse; the schema has the exact limits. Do not invent constraints, measurements, tests, or attribution. Records are limited to 2 MiB. Markdown is derivative and rendered from the same JSON; it is never parsed as an authoritative record or executed.
 
 v1 records use `scope`, `continuation`, `findings`, `decisions`, `code_state`, `verification`, `dependencies` and `provenance`; see the v1 branch of the schema.
 
