@@ -1008,7 +1008,7 @@ test("v2 rendering omits empty sections and ends on the next action", (t) => {
     assert.ok(!md.includes(absent), absent);
   assert.match(md, /## Already done — do not redo\n\n- Signature verification merged/);
   assert.match(md, /> Also check the refund handler/);
-  assert.match(md, /\[rejected\] In-memory flag — Does not survive restart Do not retry\./);
+  assert.match(md, /\[rejected\] In-memory flag — Does not survive restart\. Do not retry\./);
   assert.match(md, /- Stable job ID design — Needed to recognize redelivery/);
   assert.ok(md.trimEnd().endsWith("## Next action\n\nReproduce restart then redelivery"));
 });

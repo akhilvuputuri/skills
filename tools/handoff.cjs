@@ -665,7 +665,9 @@ function renderV2(record) {
       (x) =>
         `- [${x.status}] ${x.statement}` +
         (x.reason ? ` — ${x.reason}` : "") +
-        (x.status === "rejected" ? " Do not retry." : ""),
+        (x.status === "rejected"
+          ? (/[.!?]$/.test(x.reason) ? "" : ".") + " Do not retry."
+          : ""),
     ),
   );
   section("Already done — do not redo", bullets(record.done || []));

@@ -11,12 +11,12 @@ Write a short brief that lets a fresh agent continue this conversation's work co
 
 The whole conversation, not only the current sub-issue. The reader must see the big picture and where the current work sits in it.
 
-- `objective`: the conversation's overall goal, plus hard constraints in the user's own words.
-- `work_state`: every workstream the conversation touched, one line each, with status `done`, `active`, `blocked`, `parked` or `open`. Give the reason for blocked and parked items.
-- `focus`: the item the next session works on, and the only part written in depth. It is what the user said the next session is for, else the item the conversation ended on. Ask one question only when the choice is unclear and changes the brief.
-- `decisions` (rejected ones need a reason), `done` (already completed; the reader must not redo it), `open_requests` (unanswered user requests, verbatim), `next_action` (exactly one).
+- `objective`: `{goal, constraints: [string]}`. The conversation's overall goal, plus hard constraints in the user's own words.
+- `work_state`: `[{item, status, note, links: [string]}]`. Every workstream the conversation touched, one line each, with status `done`, `active`, `blocked`, `parked` or `open`. Give the reason for blocked and parked items.
+- `focus`: `{item, notes: [{text, basis}]}`. The item the next session works on, and the only part written in depth. It is what the user said the next session is for, else the item the conversation ended on. Ask one question only when the choice is unclear and changes the brief.
+- `decisions`: `[{statement, status, reason}]`; rejected ones need a reason. `done`: completed work the reader must not redo. `open_requests`: unanswered user requests, verbatim. `links`: `[{ref, why}]`. `next_action`: exactly one.
 
-Use progressive disclosure. When a PR, issue, commit, doc or file already holds the detail, put it in `links` or the item's `links` with one line on why to read it, and do not restate it. Spend words only on what exists nowhere else: decisions and their reasons, rejected approaches, user corrections, unverified hypotheses, and the current state of the focus.
+Use progressive disclosure. When a PR, issue, commit, doc or file already holds the detail, put it in `links` or the item's `links` with one line on why to read it, and do not restate it. A done item usually needs only its link. Spend words only on what exists nowhere else: decisions and their reasons, rejected approaches, user corrections, unverified hypotheses, and the current state of the focus.
 
 ## How to write it
 
