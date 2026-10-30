@@ -22,7 +22,7 @@ handoff --project /path/to/app export HANDOFF_ID --format markdown
 handoff --project /path/to/app validate --input /private/full-record.json
 ```
 
-`template` emits a v2 payload without identity fields. Replace its illustrative objective, focus and next action truthfully. Save payload JSON in a private file before preparing a draft; use `umask 077` when redirecting shell output. `inspect` reads HEAD, branch, and status for literal selected paths only. It does not infer push status, read secrets, or verify semantic findings. Its output fits `code_state` as is; keep already known unpublished work alongside it.
+`template` emits a v2 payload without identity fields. Replace its illustrative objective, focus and next action truthfully. Save payload JSON in a private file before preparing a draft; use `umask 077` when redirecting shell output. `inspect` reads HEAD, branch, and status for literal selected paths only. It does not infer push status, read secrets, or verify semantic findings. Its output has the shape of `code_state`, but v2 caps `code_state` at 50 relevant paths and 200 dirty paths of up to 500 characters each. Keep the paths that matter for the focus, and add already known unpublished work.
 
 `fingerprint` reads one regular file without interpreting it and returns its canonical path, SHA-256, byte count, line count (null for `.zst`/`.gz`) and a format hint. Copy it into `source` with the agent name and session ID. It needs no project or store.
 
@@ -37,7 +37,7 @@ handoff --project /path/to/app draft --input /private/payload.json \
 
 For explicit reconciliation, repeat `--predecessor` for every conflicting revision that the new complete record supersedes. The helper does not merge prose. A sole graph head is current; concurrent heads produce a conflict. Exact revision reads disclose successors. Timestamps never decide which content wins.
 
-`get --format json` returns an envelope containing `record`, `current_revision_ids`, `successor_revision_ids`, and optional `state_comparison`. For a v2 record, `state_comparison.source_transcript` reports whether the recorded transcript is `unchanged`, `grown since handoff`, `changed since handoff`, `compressed since handoff` or `missing`, or that there is `no pointer`; the helper hashes the file and never interprets its content. `export` renders to stdout; redirect explicitly for an exported copy. Both are read-only. A metadata comparison reports potentially stale or unverifiable; only an agent's revalidation of critical evidence can establish verified freshness. Resume is orientation unless the current user also requests implementation.
+`get --format json` returns an envelope containing `record`, `current_revision_ids`, `successor_revision_ids`, and optional `state_comparison`. For a v2 record, `state_comparison.source_transcript` reports whether the recorded transcript is `unchanged`, `grown since handoff`, `changed since handoff`, `compressed since handoff` or `missing`, `unverifiable: no fingerprint recorded`, `unreadable`, or that there is `no pointer`; the helper hashes the file and never interprets its content. `export` renders to stdout; redirect explicitly for an exported copy. Both are read-only. A metadata comparison reports potentially stale or unverifiable; only an agent's revalidation of critical evidence can establish verified freshness. Resume is orientation unless the current user also requests implementation.
 
 ## Record contract
 
@@ -57,12 +57,12 @@ Helper-managed fields: schema version, stable handoff ID, unique revision ID, UT
 | `open_requests` | Unanswered user requests, verbatim. |
 | `links` | Up to 15 `ref` + `why`: PRs, issues, commits, docs or paths that already hold detail. The brief points at them instead of restating them. |
 | `code_state` | Optional nullable `base_commit`, `branch`; arrays `relevant_paths`, `dirty_paths`, `unpublished_work`, `limitations`. Paths reference local content; nothing is copied. |
-| `checks` | `command`, `result` (pass/fail/unknown), `summary`. |
+| `checks` | `command`, `result` (pass/fail/unknown), `summary`, optional nullable `commit` the check ran at. |
 | `gaps` | Compaction, unavailable output and other context limits. |
 | `source` | Null or a transcript pointer: `agent`, `path` (required, nullable), optional `session_id`, `sha256`, `bytes`, `lines`, `format`. |
 | `next_action` | Required; exactly one action. Rendered last. |
 
-Strings and lists have maximum lengths (for example 600 characters for `next_action`, 500 for a focus note) so the brief stays terse; the schema has the exact limits. Do not invent constraints, measurements, tests, or attribution. Records are limited to 2 MiB. Markdown is derivative and rendered from the same JSON; it is never parsed as an authoritative record or executed.
+v2 strings are single lines, except `open_requests`, whose lines all render inside the quote, so stored text cannot open a new section of the brief. Strings and lists have maximum lengths (for example 600 characters for `next_action`, 500 for a focus note) so the brief stays terse; the schema has the exact limits. Do not invent constraints, measurements, tests, or attribution. Records are limited to 2 MiB. Markdown is derivative and rendered from the same JSON; it is never parsed as an authoritative record or executed.
 
 v1 records use `scope`, `continuation`, `findings`, `decisions`, `code_state`, `verification`, `dependencies` and `provenance`; see the v1 branch of the schema.
 
@@ -104,7 +104,7 @@ Installation and updates touch skill code only and never read runtime data. Gene
 
 Run `node /path/to/tools/handoff.cjs` in source or `node /path/to/SKILL/scripts/handoff.cjs` in an installed skill. Handoff uses Node's built-in libraries; a bundled Node-API addon supplies openat/mkdirat/linkat/unlinkat/readlinkat, directory iteration, and flock. These operations preserve the reviewed descriptor-relative guarantees that Node's standard filesystem API alone cannot provide. Releases contain the compiled addon for a specified OS/architecture. A mismatched/missing addon fails before store use; no fallback compiler or download is invoked.
 
-Project IDs and the data layout are unchanged from 0.1. Existing v1 records, including Python-produced ones, can be read and exact identical retries remain valid (JSON key ordering/whitespace need not match). The legacy `.relay.lock` filename intentionally remains for cross-version coordination; no tool is exposed as Relay. Upgrade the skill code only, using the Node installer with `--replace`; runtime records/drafts are preserved.
+Project IDs and the data layout are unchanged from 0.1. Helpers before 0.2.0 cannot read v2 records, and they fail `list` and `get` for a project whose store holds one, so upgrade every agent that shares a store together. Existing v1 records, including Python-produced ones, can be read and exact identical retries remain valid (JSON key ordering/whitespace need not match). The legacy `.relay.lock` filename intentionally remains for cross-version coordination; no tool is exposed as Relay. Upgrade the skill code only, using the Node installer with `--replace`; runtime records/drafts are preserved.
 
 macOS addon builds explicitly target macOS 11 or newer, while Linux release builds use Ubuntu 22.04 (glibc 2.35 baseline). Current CI does not execute on every older supported OS. Platform/architecture-specific release binaries are required; Linux musl/Alpine builds are not supplied. Source builds require a local compiler and Node headers; release installation never compiles code.
 

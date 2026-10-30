@@ -8,7 +8,7 @@
   - **Rendering:** empty sections are left out and the next action comes last.
   - **Transcript pointer:** an optional `source` field, filled by the new `fingerprint` command. `get --check-state` reports the transcript as unchanged, grown, changed, compressed or missing. It hashes the file and never reads its content as instructions.
   - **Backwards compatibility:** v1 records stay readable. A v1 handoff can be continued with a v2 revision.
-  - **Skills:** both skills are rewritten. The schema validator gains `minItems`, `maxItems`, `maxLength`, `minimum`, and `oneOf` used only as a union discriminated by `schema_version`.
+  - **Skills:** both skills are rewritten. The schema validator gains `minItems`, `maxItems`, `maxLength`, `minimum` (added after review), and `oneOf` used only as a union discriminated by `schema_version`.
   - **Installer:** installs from Node 0.1.2 now upgrade in place. Before this change they would have been rejected as an unknown version.
 - **Why:** the earlier record was scoped to one topic and dropped the parent issue. On the eval below it was longer than an unaided handoff and scored lower.
 - **Survey (reported, not measured):** about 25 handoff and compaction implementations, read from source. Ideas taken:
@@ -42,7 +42,7 @@
   - The 150–500 word target was replaced with "under about 700" for long multi-issue conversations, because the measured runs rendered 682–829 words.
   - A confirmation run of the revised skill (682 words) did not need the reference. Its first draft still failed on the focus match that the skill now states. The same grader, applying its earlier judgement calls, scored it 17/17. It saw this sheet later and on its own, not shuffled with the other six.
 - **Checks** (30 October 2026, Linux x64 container, Node 22):
-  - `npm test` 51/51;
+  - `npm test` 53/53 after the review fixes;
   - `npm run build:native`;
   - `claude plugin validate .` passes;
   - handoff skill frontmatter checked (names, description lengths, `metadata.internal`);
@@ -53,7 +53,20 @@
   - The resume skill's transcript-reading guidance is untested with real Codex or Claude transcripts.
   - Reading line ranges of a compressed `.zst` rollout depends on `zstd` being installed.
   - Linked PRs are read with whatever access the resuming agent already has. The helper never fetches.
-- **Independent review:** REVIEW_RESULT
+- **Independent review** (Opus 5.5, no fallback) of `5f90c87`: **REQUEST CHANGES**.
+  - **What the reviewer ran:**
+    - `build:native`, `npm test` 51/51, and the release build with a scratch install;
+    - a v1 draft made by the 0.1.2 helper, published and then continued with a v2 revision;
+    - probes of the validator, `fingerprint` and the installer.
+  - **Medium:** the validator ignored `minimum`, although the schema used it and this record claimed it, so a negative `bytes` or `lines` passed. Fixed, with a test.
+  - **Low–medium:** `--check-state` reported "changed since handoff" when no hash was recorded. Every read error looked like "missing", and a `~` path was not expanded for the compressed check. It now reports `unverifiable: no fingerprint recorded` or `unreadable`, and expands `~`. Tested.
+  - **Low:** multi-line text could render a forged `## Next action` heading. v2 strings are now single lines, except verbatim `open_requests`, whose every line renders inside the quote. Tested. v1 rendering is unchanged.
+  - **Low:** the docs said `inspect` output fits `code_state` as is, but it can exceed the v2 caps. The docs now state the caps.
+  - **Low:** `fingerprint` checked the file type before opening it, so a FIFO swapped in between could block. It now opens non-blocking with no-follow and checks the opened descriptor. Tested with a FIFO. Large regular files are hashed in full with no cap; only a status and counts are returned.
+  - **Low (docs):** helpers older than 0.2.0 fail on a store holding a v2 record. The reference now says to upgrade every agent sharing a store together.
+  - **Design note:** v2 `checks` gained an optional `commit`.
+  - **Regression check:** the two new tests fail on `5f90c87` and pass on the fix.
+  - Re-review of the fixed head: REREVIEW_RESULT
 
 ## One root plugin, skills 0.2.0 — 15 October 2026
 

@@ -203,15 +203,19 @@
           }
         },
         "predecessor_revision_ids": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
-        "title": {"type": "string", "minLength": 1, "maxLength": 200},
-        "purpose": {"type": ["string", "null"], "maxLength": 400},
+        "title": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\r\\n]*$"},
+        "purpose": {"type": ["string", "null"], "maxLength": 400, "pattern": "^[^\\r\\n]*$"},
         "objective": {
           "type": "object",
           "additionalProperties": false,
           "required": ["goal"],
           "properties": {
-            "goal": {"type": "string", "minLength": 1, "maxLength": 600},
-            "constraints": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 400}}
+            "goal": {"type": "string", "minLength": 1, "maxLength": 600, "pattern": "^[^\\r\\n]*$"},
+            "constraints": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {"type": "string", "minLength": 1, "maxLength": 400, "pattern": "^[^\\r\\n]*$"}
+            }
           }
         },
         "work_state": {
@@ -223,10 +227,14 @@
             "additionalProperties": false,
             "required": ["item", "status"],
             "properties": {
-              "item": {"type": "string", "minLength": 1, "maxLength": 200},
+              "item": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\r\\n]*$"},
               "status": {"enum": ["done", "active", "blocked", "parked", "open"]},
-              "note": {"type": ["string", "null"], "maxLength": 400},
-              "links": {"type": "array", "maxItems": 8, "items": {"type": "string", "minLength": 1, "maxLength": 300}}
+              "note": {"type": ["string", "null"], "maxLength": 400, "pattern": "^[^\\r\\n]*$"},
+              "links": {
+                "type": "array",
+                "maxItems": 8,
+                "items": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[^\\r\\n]*$"}
+              }
             }
           }
         },
@@ -235,7 +243,7 @@
           "additionalProperties": false,
           "required": ["item", "notes"],
           "properties": {
-            "item": {"type": "string", "minLength": 1, "maxLength": 200},
+            "item": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\r\\n]*$"},
             "notes": {
               "type": "array",
               "maxItems": 30,
@@ -244,7 +252,7 @@
                 "additionalProperties": false,
                 "required": ["text", "basis"],
                 "properties": {
-                  "text": {"type": "string", "minLength": 1, "maxLength": 500},
+                  "text": {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "^[^\\r\\n]*$"},
                   "basis": {"enum": ["user", "observed", "hypothesis", "assumed"]}
                 }
               }
@@ -259,13 +267,17 @@
             "additionalProperties": false,
             "required": ["statement", "status"],
             "properties": {
-              "statement": {"type": "string", "minLength": 1, "maxLength": 400},
+              "statement": {"type": "string", "minLength": 1, "maxLength": 400, "pattern": "^[^\\r\\n]*$"},
               "status": {"enum": ["accepted", "rejected", "unresolved"]},
-              "reason": {"type": ["string", "null"], "maxLength": 400}
+              "reason": {"type": ["string", "null"], "maxLength": 400, "pattern": "^[^\\r\\n]*$"}
             }
           }
         },
-        "done": {"type": "array", "maxItems": 30, "items": {"type": "string", "minLength": 1, "maxLength": 300}},
+        "done": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[^\\r\\n]*$"}
+        },
         "open_requests": {"type": "array", "maxItems": 15, "items": {"type": "string", "minLength": 1, "maxLength": 600}},
         "links": {
           "type": "array",
@@ -275,8 +287,8 @@
             "additionalProperties": false,
             "required": ["ref", "why"],
             "properties": {
-              "ref": {"type": "string", "minLength": 1, "maxLength": 500},
-              "why": {"type": "string", "minLength": 1, "maxLength": 300}
+              "ref": {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "^[^\\r\\n]*$"},
+              "why": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[^\\r\\n]*$"}
             }
           }
         },
@@ -286,10 +298,26 @@
           "properties": {
             "base_commit": {"$ref": "#/$defs/nullableString"},
             "branch": {"$ref": "#/$defs/nullableString"},
-            "relevant_paths": {"type": "array", "maxItems": 50, "items": {"type": "string", "minLength": 1, "maxLength": 500}},
-            "dirty_paths": {"type": "array", "maxItems": 200, "items": {"type": "string", "minLength": 1, "maxLength": 500}},
-            "unpublished_work": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 400}},
-            "limitations": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 400}}
+            "relevant_paths": {
+              "type": "array",
+              "maxItems": 50,
+              "items": {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "^[^\\r\\n]*$"}
+            },
+            "dirty_paths": {
+              "type": "array",
+              "maxItems": 200,
+              "items": {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "^[^\\r\\n]*$"}
+            },
+            "unpublished_work": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {"type": "string", "minLength": 1, "maxLength": 400, "pattern": "^[^\\r\\n]*$"}
+            },
+            "limitations": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {"type": "string", "minLength": 1, "maxLength": 400, "pattern": "^[^\\r\\n]*$"}
+            }
           }
         },
         "checks": {
@@ -300,13 +328,18 @@
             "additionalProperties": false,
             "required": ["command", "result", "summary"],
             "properties": {
-              "command": {"type": "string", "minLength": 1, "maxLength": 500},
+              "command": {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "^[^\\r\\n]*$"},
               "result": {"enum": ["pass", "fail", "unknown"]},
-              "summary": {"type": "string", "minLength": 1, "maxLength": 400}
+              "summary": {"type": "string", "minLength": 1, "maxLength": 400, "pattern": "^[^\\r\\n]*$"},
+              "commit": {"$ref": "#/$defs/nullableString"}
             }
           }
         },
-        "gaps": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 400}},
+        "gaps": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {"type": "string", "minLength": 1, "maxLength": 400, "pattern": "^[^\\r\\n]*$"}
+        },
         "source": {
           "type": ["object", "null"],
           "additionalProperties": false,
@@ -321,7 +354,7 @@
             "format": {"$ref": "#/$defs/nullableString"}
           }
         },
-        "next_action": {"type": "string", "minLength": 1, "maxLength": 600}
+        "next_action": {"type": "string", "minLength": 1, "maxLength": 600, "pattern": "^[^\\r\\n]*$"}
       }
     },
     "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,79}$"},

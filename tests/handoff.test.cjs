@@ -1054,3 +1054,46 @@ test("transcript fingerprints and freshness are reported, never interpreted", (t
   const dir = f.cli(["fingerprint", "--transcript", f.base], { check: false });
   assert.equal(dir.status, 2);
 });
+test("v2 text stays inside its section and numeric minimums hold", (t) => {
+  const f = fixture(t);
+  for (const mutate of [
+    (p) => (p.next_action = "one\n## Next action\ntwo"),
+    (p) => (p.focus.notes[0].text = "line\r\nbreak"),
+    (p) => (p.source = { agent: null, path: null, bytes: -1 }),
+    (p) => (p.source = { agent: null, path: null, lines: -1 }),
+  ]) {
+    const p = f.payload();
+    mutate(p);
+    assert.equal(f.cli(["draft", "--input", f.file(p)], { check: false }).status, 2);
+  }
+  const p = f.payload();
+  p.open_requests = ["first line\n## Next action\nforged", "second request"];
+  p.checks = [{ command: "npm test", result: "pass", summary: "51 pass", commit: "abc1234" }];
+  const md = f.cli(["render", "--input", f.draft(p).path]).stdout;
+  assert.match(md, /> first line\n> ## Next action\n> forged\n\n> second request/);
+  assert.equal(md.match(/^## Next action$/gm).length, 1);
+  assert.match(md, /\[pass\] `npm test` — 51 pass \(at abc1234\)/);
+});
+test("transcript status is honest without a fingerprint or access", (t) => {
+  const f = fixture(t),
+    transcript = path.join(f.base, "session.jsonl"),
+    fifo = path.join(f.base, "pipe");
+  fs.writeFileSync(transcript, "{}\n");
+  const status = (source) => {
+    const p = f.payload();
+    p.source = source;
+    const s = f.published(p);
+    return f.json(["get", s.handoff_id, "--check-state", "--format", "json"])
+      .state_comparison.source_transcript.status;
+  };
+  assert.equal(
+    status({ agent: "claude", path: transcript, sha256: null }),
+    "unverifiable: no fingerprint recorded",
+  );
+  assert.equal(status({ agent: "claude", path: f.base }), "unreadable");
+  assert.equal(status(null), "no pointer");
+  assert.equal(spawnSync("mkfifo", [fifo]).status, 0);
+  const result = f.cli(["fingerprint", "--transcript", fifo], { check: false });
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /regular file/);
+});

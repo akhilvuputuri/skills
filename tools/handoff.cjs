@@ -243,13 +243,15 @@ function validate(record) {
         visit(item, rule.items || {}, `${location}[${index}]`),
       );
     }
+    if (typeof value === "number" && own(rule, "minimum") && value < rule.minimum)
+      fail(`${location}: less than ${rule.minimum}`);
     if (typeof value === "string") {
       if (value.trim().length < (rule.minLength || 0))
         fail(location + ": empty string");
       if (own(rule, "maxLength") && [...value].length > rule.maxLength)
         fail(`${location}: longer than ${rule.maxLength} characters`);
       if (rule.pattern && !new RegExp(rule.pattern).test(value))
-        fail(location + ": invalid ID");
+        fail(location + ": invalid format");
       if (rule.format === "date-time") {
         if (
           !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|\+00:00)$/.test(
@@ -673,7 +675,15 @@ function renderV2(record) {
   section("Already done — do not redo", bullets(record.done || []));
   section(
     "Unanswered user requests (verbatim)",
-    (record.open_requests || []).map((x) => "> " + x),
+    // Every line stays inside its quote, so multi-line text cannot open a new section.
+    (record.open_requests || []).map(
+      (x, i) =>
+        (i ? "\n" : "") +
+        x
+          .split(/\r?\n/)
+          .map((line) => "> " + line)
+          .join("\n"),
+    ),
   );
   section(
     "Read when you need detail",
@@ -698,7 +708,9 @@ function renderV2(record) {
   section(
     "Checks",
     (record.checks || []).map(
-      (x) => `- [${x.result}] \`${x.command}\` — ${x.summary}`,
+      (x) =>
+        `- [${x.result}] \`${x.command}\` — ${x.summary}` +
+        (x.commit ? ` (at ${x.commit})` : ""),
     ),
   );
   section("Gaps", bullets(record.gaps || []));
@@ -1104,9 +1116,14 @@ function searchText(record) {
 // fingerprint only; their line count is unknown.
 function fingerprint(filename) {
   const resolved = fs.realpathSync(expand(filename));
-  if (!fs.statSync(resolved).isFile()) fail("Transcript must be a regular file");
+  // Open without blocking and check the opened descriptor, so a FIFO swapped in after
+  // path resolution cannot stall the read.
+  const fd = fs.openSync(resolved, C.O_RDONLY | C.O_NONBLOCK | C.O_NOFOLLOW);
+  if (!fs.fstatSync(fd).isFile()) {
+    fs.closeSync(fd);
+    fail("Transcript must be a regular file");
+  }
   const hash = crypto.createHash("sha256"),
-    fd = fs.openSync(resolved, "r"),
     buffer = Buffer.alloc(1 << 20);
   let bytes = 0,
     lines = 0,
@@ -1131,17 +1148,19 @@ function fingerprint(filename) {
 }
 function compareSource(source) {
   if (!source?.path) return { status: "no pointer" };
+  const recorded = expand(source.path);
   let current;
   try {
-    current = fingerprint(source.path);
-  } catch {
+    current = fingerprint(recorded);
+  } catch (error) {
+    if (error.code !== "ENOENT") return { status: "unreadable" };
     for (const suffix of [".zst", ".gz"])
-      if (fs.existsSync(source.path + suffix))
-        return { status: "compressed since handoff", path: source.path + suffix };
+      if (fs.existsSync(recorded + suffix))
+        return { status: "compressed since handoff", path: recorded + suffix };
     return { status: "missing" };
   }
-  if (source.sha256 && current.sha256 === source.sha256)
-    return { status: "unchanged" };
+  if (!source.sha256) return { status: "unverifiable: no fingerprint recorded" };
+  if (current.sha256 === source.sha256) return { status: "unchanged" };
   return {
     status:
       source.lines != null && current.lines != null && current.lines > source.lines
