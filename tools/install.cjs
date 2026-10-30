@@ -62,9 +62,12 @@ function recognized(destination) {
   const version = fs
     .readFileSync(path.join(destination, marker), "utf8")
     .trim();
-  if (!["0.1.0", "0.1.1", VERSION].includes(version))
+  // 0.1.0 and 0.1.1 shipped the Python runtime; later versions ship the Node runtime.
+  const python = ["0.1.0", "0.1.1"],
+    node = ["0.1.2", VERSION];
+  if (![...python, ...node].includes(version))
     throw new Error("Unknown installation version");
-  if ((old && version === VERSION) || (!old && version !== VERSION))
+  if (old !== python.includes(version))
     throw new Error("Version and runtime layout disagree");
 }
 function install(target, names = SKILLS, replace = false) {

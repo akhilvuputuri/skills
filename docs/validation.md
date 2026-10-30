@@ -1,5 +1,83 @@
 # Validation status
 
+## Handoff 0.2.0: whole-conversation briefs — 30 October 2026
+
+- **Change:** schema v2 handoff records.
+  - **What a brief covers:** the whole conversation, through an `objective` and one-line `work_state` per workstream. One `focus` item is written in depth.
+  - **Progressive disclosure:** `links`, plus links on each item, point to PRs, issues and docs that already hold the detail, so the brief does not restate it.
+  - **Rendering:** empty sections are left out and the next action comes last.
+  - **Transcript pointer:** an optional `source` field, filled by the new `fingerprint` command. `get --check-state` reports the transcript as unchanged, grown, changed, compressed or missing. It hashes the file and never reads its content as instructions.
+  - **Backwards compatibility:** v1 records stay readable. A v1 handoff can be continued with a v2 revision.
+  - **Skills:** both skills are rewritten. The schema validator gains `minItems`, `maxItems`, `maxLength`, `minimum` (added after review), and `oneOf` used only as a union discriminated by `schema_version`.
+  - **Installer:** installs from Node 0.1.2 now upgrade in place. Before this change they would have been rejected as an unknown version.
+- **Why:** the earlier record was scoped to one topic and dropped the parent issue. On the eval below it was longer than an unaided handoff and scored lower.
+- **Survey (reported, not measured):** about 25 handoff and compaction implementations, read from source. Ideas taken:
+  - OpenCode's goal decomposition with Completed/Active/Blocked, its update-not-rewrite prompt and its terse rules;
+  - Codex keeping the user's own words;
+  - dotclaude's planted-fact method;
+  - amal-david/claude-to-codex's transcript pointer with a hash;
+  - "do not redo", "do not retry" and the warning that a belief written as fact becomes a false premise, from community skills.
+- **Eval (measured, 30 October 2026):**
+  - **Setup:** `evals/handoff/long-conversation.md` is synthetic: 1,184 words, one migration with four sub-issues, a correction, a rejected approach and linked PRs, ending inside one sub-issue. `long-conversation-probes.json` holds 17 planted-fact probes and a pass rule fixed before the v2 runs.
+  - **Writers and readers:** Opus 5.5 writers, two per condition. Sonnet 5.5 readers saw only the brief. The plain baseline prompt asked the agent to write a handoff with no skill.
+  - **Grading:** one Opus 5.5 grader scored all six answer sheets under shuffled labels, without knowing which condition wrote which.
+  - **Rule change:** after a first grading round the guard rule was clarified to "fails when it scores 0". That changed no order.
+
+  | Condition | Words | Parent /7 | Focus /7 | Guard /3 | Total /17 | Pass |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | v1 skill, run A | 1504 | 4.5 | 7 | 3 | 14.5 | no |
+  | v1 skill, run B | 1371 | 3.5 | 6 | 3 | 12.5 | no |
+  | Plain handoff, run A | 812 | 6 | 7 | 2.5 | 15.5 | yes |
+  | Plain handoff, run B | 869 | 6.5 | 7 | 2.5 | 16 | yes |
+  | v2 skill, run A | 829 | 6.5 | 7 | 3 | 16.5 | yes |
+  | v2 skill, run B | 754 | 7 | 7 | 3 | 17 | yes |
+
+  - **v1:** both runs left out the blocked backfill and the parked dashboard, as the v1 skill instructs.
+  - **v2:** kept every parent fact in one run and all but half a point in the other, using about 45% fewer words than v1.
+  - **v2 against the plain handoff:** the lead is 0.5–1.5 points with n=2 on one conversation. That is not a demonstrated improvement.
+  - **Writing cost:** harness-reported subagent token totals were roughly the same for v1 (68–69k) and v2 (68–69k), against 57k for the plain baseline. Most of each total is fixed session context. The saving is in what the next agent reads, not in writing.
+- **Fixes after the measured runs:**
+  - Both v2 writers' first drafts failed validation on item shapes. The skill now shows each field's shape and states that `focus.item` must repeat a `work_state` item exactly.
+  - The renderer now punctuates a rejected reason before "Do not retry."
+  - The 150–500 word target was replaced with "under about 700" for long multi-issue conversations, because the measured runs rendered 682–829 words.
+  - A confirmation run of the revised skill (682 words) did not need the reference. Its first draft still failed on the focus match that the skill now states. The same grader, applying its earlier judgement calls, scored it 17/17. It saw this sheet later and on its own, not shuffled with the other six.
+- **Checks** (30 October 2026, Linux x64 container, Node 22):
+  - `npm test` 53/53 after the review fixes;
+  - `npm run build:native`;
+  - `claude plugin validate .` passes;
+  - handoff skill frontmatter checked (names, description lengths, `metadata.internal`);
+  - `build-release` produced the 0.2.0 linux-x64 artifacts, and the built single-file installer installed into a scratch target whose helper reports 0.2.0 and drafts a v2 template.
+  - Not run here: macOS, and a real Codex or Claude transcript (fingerprint is tested on a synthetic JSONL file).
+- **Limits:**
+  - One synthetic conversation, two runs per condition, model-graded.
+  - The resume skill's transcript-reading guidance is untested with real Codex or Claude transcripts.
+  - Reading line ranges of a compressed `.zst` rollout depends on `zstd` being installed.
+  - Linked PRs are read with whatever access the resuming agent already has. The helper never fetches.
+- **Independent review** (Opus 5.5, no fallback) of `5f90c87`: **REQUEST CHANGES**.
+  - **What the reviewer ran:**
+    - `build:native`, `npm test` 51/51, and the release build with a scratch install;
+    - a v1 draft made by the 0.1.2 helper, published and then continued with a v2 revision;
+    - probes of the validator, `fingerprint` and the installer.
+  - **Medium:** the validator ignored `minimum`, although the schema used it and this record claimed it, so a negative `bytes` or `lines` passed. Fixed, with a test.
+  - **Low–medium:** `--check-state` reported "changed since handoff" when no hash was recorded. Every read error looked like "missing", and a `~` path was not expanded for the compressed check. It now reports `unverifiable: no fingerprint recorded` or `unreadable`, and expands `~`. Tested.
+  - **Low:** multi-line text could render a forged `## Next action` heading. v2 strings are now single lines, except verbatim `open_requests`, whose every line renders inside the quote. Tested. v1 rendering is unchanged.
+  - **Low:** the docs said `inspect` output fits `code_state` as is, but it can exceed the v2 caps. The docs now state the caps.
+  - **Low:** `fingerprint` checked the file type before opening it, so a FIFO swapped in between could block. It now opens non-blocking with no-follow and checks the opened descriptor. Tested with a FIFO. Large regular files are hashed in full with no cap; only a status and counts are returned.
+  - **Low (docs):** helpers older than 0.2.0 fail on a store holding a v2 record. The reference now says to upgrade every agent sharing a store together.
+  - **Design note:** v2 `checks` gained an optional `commit`.
+  - **Regression check:** the two new tests fail on `5f90c87` and pass on the fix.
+- **Re-review** (Opus 5.5, same reviewer) of `53bf14f`: **REQUEST CHANGES**.
+  - **Confirmed fixed:** `minimum`; the transcript statuses, including `~` expansion end to end; the non-blocking `fingerprint`; quoting of verbatim requests; and the docs.
+  - **Low–medium:** v2 fields that used the shared `nullableString` were still multi-line, so a forged heading could render. Affected fields: `code_state.branch`, `code_state.base_commit`, all `source` strings, and the new `checks.commit`. They now use a single-line `nullableLine` definition (v1 is unchanged). The test covers each one.
+  - **Low:** a bare carriage return in a verbatim request was not split. It is now. Tested.
+  - **Not blocking:** the `fstat` descriptor leak is closed. `U+2028` is accepted, which is harmless for Markdown.
+  - **Limit:** helper-managed `project` fields keep the v1 definition.
+- **Third review** (Opus 5.5, same reviewer) of `d8a148c`: **APPROVE**.
+  - **Checks:** `npm test` 53/53. Every v2 agent-payload string leaf carries the single-line pattern. Bare-CR requests stay quoted. The `fingerprint` descriptor is closed on every path. A v1 record with multi-line text still validates and renders.
+  - **Low, not blocking:** a project directory name containing a newline can still break the rendered header, because helper-managed `project` fields keep the v1 definition (v1 rendering has the same behaviour). Recorded as a limit.
+  - **Not run by the reviewer:** macOS, real Codex or Claude transcripts, the model-graded eval, and Devin Review.
+- **Docs-only head after approval:** this record was filled in and the reference now names the `project` exception. The focused review of that delta, and Devin Review, are recorded on PR #14.
+
 ## One root plugin, skills 0.2.0 — 15 October 2026
 
 - **Change:** the repository root is now a single plugin, `skills@skills`, laid out like addyosmani/agent-skills and obra/superpowers (both checked on GitHub: one root plugin each, with `skills/` at the top). Before, it shipped two plugins under `plugins/`.

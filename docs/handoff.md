@@ -1,6 +1,6 @@
 # Handoff reference
 
-Handoff 0.1 uses Node 22+ and a POSIX filesystem with descriptor-relative operations, no-follow opens, hard links, and directory fsync. macOS and Linux are the intended platforms; Windows is not supported in this version. No third-party npm packages, network operations, daemon, MCP server, or model service are used by the helper.
+Handoff 0.2 uses Node 22+ and a POSIX filesystem with descriptor-relative operations, no-follow opens, hard links, and directory fsync. macOS and Linux are the intended platforms; Windows is not supported in this version. No third-party npm packages, network operations, daemon, MCP server, or model service are used by the helper.
 
 ## Commands
 
@@ -11,6 +11,7 @@ handoff --project /path/to/app --data-dir /local/private/handoff project
 handoff --project /path/to/app list --query retry
 handoff --project /path/to/app inspect --path src/retry.ts --path tests/retry.test.ts
 handoff --project /path/to/app template --title 'Retry investigation'
+handoff fingerprint --transcript ~/.codex/sessions/2026/10/30/rollout-2026-10-30T09-00-00-ID.jsonl
 handoff --project /path/to/app draft --input /private/payload.json
 handoff --project /path/to/app render --input /local/private/handoff/projects/P/drafts/R.json
 handoff --project /path/to/app publish --input /local/private/handoff/projects/P/drafts/R.json
@@ -21,7 +22,9 @@ handoff --project /path/to/app export HANDOFF_ID --format markdown
 handoff --project /path/to/app validate --input /private/full-record.json
 ```
 
-`template` emits a payload without identity fields. Replace its illustrative goal and unknowns truthfully. Save payload JSON in a private file before preparing a draft; use `umask 077` when redirecting shell output. `inspect` reads HEAD, branch, and status for literal selected paths only. It does not infer push status, read secrets, or verify semantic findings. If integrating inspection into a payload, retain already known PR links, artifacts, and limitations.
+`template` emits a v2 payload without identity fields. Replace its illustrative objective, focus and next action truthfully. Save payload JSON in a private file before preparing a draft; use `umask 077` when redirecting shell output. `inspect` reads HEAD, branch, and status for literal selected paths only. It does not infer push status, read secrets, or verify semantic findings. Its output has the shape of `code_state`, but v2 caps `code_state` at 50 relevant paths and 200 dirty paths of up to 500 characters each. Keep the paths that matter for the focus, and add already known unpublished work.
+
+`fingerprint` reads one regular file without interpreting it and returns its canonical path, SHA-256, byte count, line count (null for `.zst`/`.gz`) and a format hint. Copy it into `source` with the agent name and session ID. It needs no project or store.
 
 `draft` validates the payload, generates identity/UTC metadata, and saves a complete draft. It never appears in `list`. `publish` accepts a complete prepared record, preserving its IDs for exact retries. A repeated identical record succeeds; differing content at the same ID fails. Input files are never edited. Saved drafts remain available after publish and after storage failures. When using `--input -`, retaining the original input is the caller's responsibility; private files are preferred.
 
@@ -34,27 +37,34 @@ handoff --project /path/to/app draft --input /private/payload.json \
 
 For explicit reconciliation, repeat `--predecessor` for every conflicting revision that the new complete record supersedes. The helper does not merge prose. A sole graph head is current; concurrent heads produce a conflict. Exact revision reads disclose successors. Timestamps never decide which content wins.
 
-`get --format json` returns an envelope containing `record`, `current_revision_ids`, `successor_revision_ids`, and optional `state_comparison`. `export` renders to stdout; redirect explicitly for an exported copy. Both are read-only. A metadata comparison reports potentially stale or unverifiable; only an agent's revalidation of critical evidence can establish verified freshness. Resume is orientation unless the current user also requests implementation.
+`get --format json` returns an envelope containing `record`, `current_revision_ids`, `successor_revision_ids`, and optional `state_comparison`. For a v2 record, `state_comparison.source_transcript` reports whether the recorded transcript is `unchanged`, `grown since handoff`, `changed since handoff`, `compressed since handoff` or `missing`, `unverifiable: no fingerprint recorded`, `unreadable`, or that there is `no pointer`; the helper hashes the file and never interprets its content. `export` renders to stdout; redirect explicitly for an exported copy. Both are read-only. A metadata comparison reports potentially stale or unverifiable; only an agent's revalidation of critical evidence can establish verified freshness. Resume is orientation unless the current user also requests implementation.
 
 ## Record contract
 
-The authoritative JSON Schema is `schema/handoff.schema.json` in source, or `scripts/handoff.schema.json` in an installed skill. The standard-library validator implements exactly the schema features used here; it is not a general JSON Schema engine. Unsupported schema versions are rejected; v0.1 performs no data migrations.
+The authoritative JSON Schema is `schema/handoff.schema.json` in source, or `scripts/handoff.schema.json` in an installed skill. It defines two record versions, selected by `schema_version`. `draft` writes v2. v1 records remain readable and renderable, and a v1 handoff can be continued with a v2 revision. Other versions are rejected. The standard-library validator implements exactly the schema features used here, including `oneOf` only as a union discriminated by `schema_version`; it is not a general JSON Schema engine. No stored record is migrated or rewritten.
 
-Helper-managed fields: schema version, stable handoff ID, unique revision ID, UTC creation time, project identity, and explicit predecessor revision IDs. Agent payload fields:
+Helper-managed fields: schema version, stable handoff ID, unique revision ID, UTC creation time, project identity, and explicit predecessor revision IDs. A v2 brief covers the whole conversation and details one focus item. Agent payload fields (optional ones may be omitted; the renderer leaves out empty sections):
 
-| Group | Shape and meaning |
+| Field | Shape and meaning |
 | --- | --- |
-| `issue_reference` | String or null; inert metadata, never a destination. |
-| `scope` | `title`, `task`, `goal`, plus arrays `constraints`, `acceptance_criteria`, `boundaries`. |
-| `continuation` | `status`, arrays `completed`, ordered `next_actions`, `blockers`, `open_questions`. |
-| `findings` | Array of `statement`, `classification` (requirement/observed/hypothesis/proposal), arrays `evidence`, `evidence_limitations`. Every finding needs evidence or a limitation. |
-| `decisions` | Array of `statement`, `status` (accepted/rejected/unresolved), nullable `reason`, nullable `established_by`, array `evidence`. Rejected choices require a reason. |
-| `code_state` | Nullable `base_commit`, `branch`; arrays `relevant_paths`, `dirty_paths`, `unpublished_work`, `pr_links`, `artifacts`, `limitations`. Paths/artifacts reference local content; nothing is copied. |
-| `verification` | Array `checks` containing `command`, `result` (pass/fail/unknown), `summary`, nullable `commit`, nullable UTC `checked_at`; array `not_run`. |
-| `dependencies` | Array of `description`, `rationale`, array `references`. Include only task dependencies. |
-| `provenance` | Nullable `agent`, `session`, arrays `sources`, `uncertainties`; `context_completeness` (full/partial/unknown). Full means all available context for the selected task, not hidden or inaccessible history. |
+| `title` | Required string. |
+| `purpose` | Optional; what the next session will be used for. |
+| `objective` | Required `goal` (the whole conversation's), optional `constraints` (hard requirements, verbatim when the user stated them). |
+| `work_state` | Required, 1–30 items of `item`, `status` (done/active/blocked/parked/open), optional `note` and `links`. Every workstream the conversation touched, one line each. |
+| `focus` | Required `item` (must name a `work_state` item) and `notes`: `text` plus `basis` (user/observed/hypothesis/assumed). The only section in depth. |
+| `decisions` | `statement`, `status` (accepted/rejected/unresolved), optional `reason`. Rejected choices require a reason and render as "Do not retry". |
+| `done` | Completed work the next agent must not redo. |
+| `open_requests` | Unanswered user requests, verbatim. |
+| `links` | Up to 15 `ref` + `why`: PRs, issues, commits, docs or paths that already hold detail. The brief points at them instead of restating them. |
+| `code_state` | Optional nullable `base_commit`, `branch`; arrays `relevant_paths`, `dirty_paths`, `unpublished_work`, `limitations`. Paths reference local content; nothing is copied. |
+| `checks` | `command`, `result` (pass/fail/unknown), `summary`, optional nullable `commit` the check ran at. |
+| `gaps` | Compaction, unavailable output and other context limits. |
+| `source` | Null or a transcript pointer: `agent`, `path` (required, nullable), optional `session_id`, `sha256`, `bytes`, `lines`, `format`. |
+| `next_action` | Required; exactly one action. Rendered last. |
 
-All groups are required; empty arrays and truthful nulls are valid. Do not invent acceptance criteria, measurements, tests, or attribution. Mark source references local/private where relevant. Records are limited to 2 MiB. Markdown is derivative and rendered from the same JSON; it is never parsed as an authoritative record or executed.
+v2 agent-payload strings are single lines, except `open_requests`, whose lines all render inside the quote, so stored text cannot open a new section of the brief. Helper-managed `project` fields come from the local filesystem and keep the v1 definition. Strings and lists have maximum lengths (for example 600 characters for `next_action`, 500 for a focus note) so the brief stays terse; the schema has the exact limits. Do not invent constraints, measurements, tests, or attribution. Records are limited to 2 MiB. Markdown is derivative and rendered from the same JSON; it is never parsed as an authoritative record or executed.
+
+v1 records use `scope`, `continuation`, `findings`, `decisions`, `code_state`, `verification`, `dependencies` and `provenance`; see the v1 branch of the schema.
 
 ## Store and project identity
 
@@ -76,7 +86,7 @@ To explicitly associate an empty clone/root with another local project:
 handoff --project /path/to/new-clone link-project --to /path/to/existing-clone
 ```
 
-Mappings are immutable and resolve transitively with cycle validation; remapping an existing mapping or hiding existing source handoffs is rejected. Mapping resolution and writes share a private store lock so linking cannot race with publication. A previously prepared draft for a newly linked identity is rejected without deleting it; prepare a new draft for the linked project. The lock protects local store metadata only, never application code. Automatic migrations/remapping are outside v0.1. Moving a canonical project root changes identity; keep its location stable or perform a deliberate future migration.
+Mappings are immutable and resolve transitively with cycle validation; remapping an existing mapping or hiding existing source handoffs is rejected. Mapping resolution and writes share a private store lock so linking cannot race with publication. A previously prepared draft for a newly linked identity is rejected without deleting it; prepare a new draft for the linked project. The lock protects local store metadata only, never application code. Automatic migrations/remapping are not provided. Moving a canonical project root changes identity; keep its location stable or perform a deliberate future migration.
 
 Writes use a private same-directory temporary file, file fsync, atomic no-overwrite hard-link installation, and directory fsync. Temporary leftovers from process termination are ignored; a completed retry reuses the same ID. Parallel successors are retained. Files are immutable by application convention, not tamper-proof; another process owned by the same user can alter them. Local storage protects completed saves against process interruption, not disk loss or guaranteed power-loss behavior on every filesystem. No backup/sync is provided.
 
@@ -90,11 +100,11 @@ Two local agents share records through filesystem access, with no manual JSON tr
 
 Installation and updates touch skill code only and never read runtime data. Generic source can be developed at home and transferred to a work machine; real work records remain in that machine's local store. Do not include real records in examples, releases, tests, diagnostics, or this repository. Future schema upgrades must check compatibility explicitly; destructive migrations would need a separate, deliberate local backup and migration workflow.
 
-## Node implementation (0.1.2)
+## Node implementation (0.2.0)
 
 Run `node /path/to/tools/handoff.cjs` in source or `node /path/to/SKILL/scripts/handoff.cjs` in an installed skill. Handoff uses Node's built-in libraries; a bundled Node-API addon supplies openat/mkdirat/linkat/unlinkat/readlinkat, directory iteration, and flock. These operations preserve the reviewed descriptor-relative guarantees that Node's standard filesystem API alone cannot provide. Releases contain the compiled addon for a specified OS/architecture. A mismatched/missing addon fails before store use; no fallback compiler or download is invoked.
 
-The record schema stays at v1 and project IDs/data layout are unchanged. Existing Python-produced records can be read and exact identical retries remain valid (JSON key ordering/whitespace need not match). The legacy `.relay.lock` filename intentionally remains for cross-version coordination; no tool is exposed as Relay. Upgrade the skill code only, using the Node installer with `--replace`; runtime records/drafts are preserved.
+Project IDs and the data layout are unchanged from 0.1. Helpers before 0.2.0 cannot read v2 records, and they fail `list` and `get` for a project whose store holds one, so upgrade every agent that shares a store together. Existing v1 records, including Python-produced ones, can be read and exact identical retries remain valid (JSON key ordering/whitespace need not match). The legacy `.relay.lock` filename intentionally remains for cross-version coordination; no tool is exposed as Relay. Upgrade the skill code only, using the Node installer with `--replace`; runtime records/drafts are preserved.
 
 macOS addon builds explicitly target macOS 11 or newer, while Linux release builds use Ubuntu 22.04 (glibc 2.35 baseline). Current CI does not execute on every older supported OS. Platform/architecture-specific release binaries are required; Linux musl/Alpine builds are not supplied. Source builds require a local compiler and Node headers; release installation never compiles code.
 

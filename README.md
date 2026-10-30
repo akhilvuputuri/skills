@@ -32,7 +32,7 @@ codex plugin add skills@skills
 | --- | --- |
 | `preflight`, `independent-review`, `ship`, `journal`, `incident`, `experiment`, `adopt` | Akhil's engineering workflow for coding agents, plus always-on core rules in Claude Code |
 | `ios-design` | Audit or refine native iPhone/iPad interfaces using a source-linked digest of Apple's Human Interface Guidelines: Liquid Glass, Dynamic Type, accessibility, components, writing, app icons, and reading/offline-first patterns |
-| `publish-handoff`, `resume-handoff` (release installer, in [`handoff/`](handoff)) | Save the context for one task, then resume it in another local agent session |
+| `publish-handoff`, `resume-handoff` (release installer, in [`handoff/`](handoff)) | Save a short brief of a conversation (the whole goal, every workstream's status, and the current focus in depth), then resume it in another local agent session such as Codex or Claude Code |
 
 ### Moving from earlier installs
 
@@ -129,7 +129,8 @@ An isolated trial with the npm-published `skills` 1.5.18 treated a direct localh
 
 After installation, talk to your coding agent:
 
-- “Publish a handoff for the login bug only.”
+- “Write a handoff so I can continue in Codex tomorrow.”
+- “Publish a handoff focused on the login bug.”
 - “Draft a handoff for the duplicate reply investigation.”
 - “Update handoff H with today's findings.”
 - “List handoffs for this project.”
@@ -140,7 +141,7 @@ The agent handles JSON and helper commands. Publishing returns a handoff ID, rev
 
 ## Data and offline boundary
 
-Default store: `~/.local/share/handoff`, outside source/application checkouts. Override with `HANDOFF_DATA_DIR` or `--data-dir`. Stores from before the rename keep working: `ASTACK_DATA_DIR` is still read when `HANDOFF_DATA_DIR` is unset, and an existing `~/.local/share/a-stack` is used while `~/.local/share/handoff` does not exist. To migrate, move the directory to the new path. Choose a genuinely local private directory rather than a cloud-synced folder. Store directories/files have user-only permissions. Worktrees share identity; separate clones remain isolated unless explicitly linked. Existing schema-v1 records and project IDs remain compatible with the former Python helper. The legacy `.relay.lock` filename is retained solely for store compatibility; the tool is called Handoff.
+Default store: `~/.local/share/handoff`, outside source/application checkouts. Override with `HANDOFF_DATA_DIR` or `--data-dir`. Stores from before the rename keep working: `ASTACK_DATA_DIR` is still read when `HANDOFF_DATA_DIR` is unset, and an existing `~/.local/share/a-stack` is used while `~/.local/share/handoff` does not exist. To migrate, move the directory to the new path. Choose a genuinely local private directory rather than a cloud-synced folder. Store directories/files have user-only permissions. Worktrees share identity; separate clones remain isolated unless explicitly linked. Existing schema-v1 records and project IDs remain compatible with the former Python helper; new revisions use schema v2. The legacy `.relay.lock` filename is retained solely for store compatibility; the tool is called Handoff.
 
 The helper makes no network calls. Local Git metadata reads deny transport protocols and lazy fetching. A cloud-backed agent can still send read context to its configured model provider; fully offline model processing requires a local agent/model. Containers require a store mount, and hosted agents without local filesystem access cannot use this store.
 

@@ -1,30 +1,38 @@
 ---
 name: publish-handoff
-description: Save or draft a local continuation record for a selected task from this conversation, or publish a new revision with updated findings. Use for local agent handoffs; this workflow does not publish to GitHub or transfer code.
+description: Save a local handoff brief of this conversation so another agent session (Claude Code, Codex or another local agent) can continue it, or publish a new revision of an existing handoff. Use for local agent handoffs; this workflow does not publish to GitHub or transfer code.
 metadata:
   internal: true
 ---
 
-Create a task-specific continuation record using only context available to this agent. “Publish” means durable local storage. Use the bundled `scripts/handoff.cjs` with Node 22+; substitute the actual absolute skill directory in commands. If the runtime is missing, follow the akhilvuputuri/skills repository's offline installer rather than downloading dependencies. Read [handoff reference](references/handoff.md) for command syntax and the record contract when constructing a record.
+Write a short brief that lets a fresh agent continue this conversation's work cold. "Publish" means durable local storage. Run the bundled `scripts/handoff.cjs` with Node 22+, substituting the skill's absolute directory. If the runtime is missing, use the akhilvuputuri/skills offline installer. Read [the reference](references/handoff.md) only when command syntax or a field is unclear.
 
-## Select and extract
+## What the brief covers
 
-Resolve the requested topic and project from the user's instruction and observed workspace. A bare “issue 2” can refer to a numbered conversational list; never assume a GitHub issue. Ask one focused question when scope or project remains materially ambiguous. An unambiguous local save needs no extra confirmation.
+The whole conversation, not only the current sub-issue. The reader must see the big picture and where the current work sits in it.
 
-Collect selected information across all available turns. Include directly relevant context and necessary shared dependencies with a reason. Explain how retained shared context connects to the selected goal in `dependencies`, retaining uncertainty when that connection is conditional. Shared files or keywords alone do not justify importing another topic. State boundaries in terms of the selected task; put acknowledgments of excluded topic titles in the receipt, outside the record. Exclude unrelated details, next actions, credentials, environment values, and transcript dumps. If several tasks are explicitly requested, produce separate records and report each save independently.
+- `objective`: `{goal, constraints: [string]}`. The conversation's overall goal, plus hard constraints in the user's own words.
+- `work_state`: `[{item, status, note, links: [string]}]`. Every workstream the conversation touched, one line each, with status `done`, `active`, `blocked`, `parked` or `open`. Give the reason for blocked and parked items.
+- `focus`: `{item, notes: [{text, basis}]}`, where `item` repeats one `work_state` item's text exactly. The item the next session works on, and the only part written in depth. It is what the user said the next session is for, else the item the conversation ended on. Ask one question only when the choice is unclear and changes the brief.
+- `decisions`: `[{statement, status, reason}]`; rejected ones need a reason. `done`: completed work the reader must not redo. `open_requests`: unanswered user requests, verbatim. `links`: `[{ref, why}]`. `next_action`: exactly one.
 
-Preserve user requirements, observed results, hypotheses, proposals, accepted decisions, and rejected approaches separately. Later explicit corrections supersede earlier claims. Keep unresolved conflicts visible. Mark compaction, inaccessible outputs, and other context gaps; do not claim a complete extraction when context is incomplete. Do not invent user-approved acceptance criteria or passing tests.
+Use progressive disclosure. When a PR, issue, commit, doc or file already holds the detail, put it in `links` or the item's `links` with one line on why to read it, and do not restate it. A done item usually needs only its link. Spend words only on what exists nowhere else: decisions and their reasons, rejected approaches, user corrections, unverified hypotheses, and the current state of the focus.
 
-## Prepare and save
+## How to write it
 
-Run `project` and project-scoped `list --query` to discover identity and any relevant existing handoff. Matching words do not automatically make this an update. Use a new handoff for a new task. An update uses a full replacement payload with an explicit handoff ID and predecessor revision ID(s).
+- Terse single-line items, no prose paragraphs. Stay under about 700 rendered words for a long multi-issue conversation, and far less for simple work. The helper rejects oversized fields and lists.
+- Tag each focus note `user`, `observed`, `hypothesis` or `assumed`. Never upgrade an assumption or hypothesis into a fact. Do not invent tests, results or acceptance criteria.
+- Later corrections replace earlier claims. Keep the corrected value only.
+- Self-contained: no "see above". Leave out instruction-file conventions, environment details, conversation play-by-play, secrets and credentials.
+- Record compaction, missing output and other context gaps in `gaps`.
 
-Run `template --title` for an editable JSON payload and `inspect --path` for relevant repository paths. Preserve other known code-state details when incorporating inspection output. Record unpublished work and inaccessible artifacts. The helper does not transfer code. Discussion-only records may have unknown code state with a stated limitation.
+## Save
 
-Create the payload in a private temporary file outside application and skills checkouts, preferably beneath the Handoff store directory (`HANDOFF_DATA_DIR`, otherwise `~/.local/share/handoff` or an existing legacy `~/.local/share/a-stack`) with mode 0600. Retain that file on failure. Populate all concept groups: scope, continuation, findings, decisions, code state, verification, dependencies, provenance. Aim for a 600–1200 word rendered brief, shorter for simple tasks; keep essential constraints and blockers even when longer.
+1. Run `project`, then `list --query` with a few distinctive words. If a handoff for this same work exists, this is an update: read its current revision with `get H --format json`, and edit that record rather than writing from scratch. Newer conversation takes precedence; move finished work out of `active`; drop resolved blockers and answered requests. Otherwise run `template --title`.
+2. Optionally run `inspect --path` for relevant files and copy the result into `code_state`. Also record unpublished work. The helper never transfers code.
+3. Optional source pointer: when you can identify this conversation's own transcript file, run `fingerprint --transcript FILE` and copy the result into `source`, adding `agent` and `session_id`. Claude Code keeps transcripts under `~/.claude/projects/<cwd-slug>/<session-id>.jsonl`, and Codex under `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`. Confirm the file by matching a distinctive recent message from this conversation; recency alone is not confirmation. If you cannot confirm it, leave `source` null.
+4. Write the payload to a private file (mode 0600) beneath the store directory (`HANDOFF_DATA_DIR`, else `~/.local/share/handoff`), never in a checkout. Run `draft --input FILE`, adding `--handoff-id H --predecessor R` for an update. For a draft request, `render` the draft and stop. Otherwise run `publish --input DRAFT_PATH`, using exactly that draft file.
 
-Run `draft --input FILE` (with explicit lineage for an update). This validates and saves a private draft outside the published list. For a draft request, render that draft and stop. For a publish request, run `publish --input DRAFT_PATH` using exactly the generated draft, retaining its IDs for retries. Publishing validates, writes atomically without overwriting, and reads back. A differing same-ID retry is an error. Competing successors remain visible; never choose by timestamp. A multi-parent revision requires explicit reconciliation of the conflicting content.
+Report the handoff ID, revision ID, path, the focus, and any material gaps. If several separate handoffs are requested, save and report each independently. Competing successors stay visible; never choose one by timestamp.
 
-Return the selected topic, handoff ID, revision ID, local path, and material limitations. Report conflicts and individual failures. Unrelated topics may be acknowledged by short title only, outside the stored record.
-
-Do not fetch remote state, contact issue trackers, commit, push, stash, switch branches, copy checkouts, or add telemetry as part of this workflow. Issue URLs are inert metadata. Keep runtime records out of the skills repo and packages. The helper adds no network calls; the host agent may still process content through its configured model provider.
+Do not fetch remote state, post to issue trackers, commit, push, stash or switch branches as part of this workflow. Links are recorded as text. The helper makes no network calls; the host agent may still send context to its model provider.
