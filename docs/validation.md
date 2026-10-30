@@ -76,7 +76,7 @@
   - **Checks:** `npm test` 53/53. Every v2 agent-payload string leaf carries the single-line pattern. Bare-CR requests stay quoted. The `fingerprint` descriptor is closed on every path. A v1 record with multi-line text still validates and renders.
   - **Low, not blocking:** a project directory name containing a newline can still break the rendered header, because helper-managed `project` fields keep the v1 definition (v1 rendering has the same behaviour). Recorded as a limit.
   - **Not run by the reviewer:** macOS, real Codex or Claude transcripts, the model-graded eval, and Devin Review.
-- **Docs-only head after approval:** this record was filled in and the reference now names the `project` exception. Focused review of that delta: FOCUSED_RESULT
+- **Docs-only head after approval:** this record was filled in and the reference now names the `project` exception. The focused review of that delta, and Devin Review, are recorded on PR #14.
 
 ## One root plugin, skills 0.2.0 — 15 October 2026
 
