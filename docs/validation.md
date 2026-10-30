@@ -1,5 +1,60 @@
 # Validation status
 
+## Handoff 0.2.0: whole-conversation briefs — 30 October 2026
+
+- **Change:** schema v2 handoff records.
+  - **What a brief covers:** the whole conversation, through an `objective` and one-line `work_state` per workstream. One `focus` item is written in depth.
+  - **Progressive disclosure:** `links`, plus links on each item, point to PRs, issues and docs that already hold the detail, so the brief does not restate it.
+  - **Rendering:** empty sections are left out and the next action comes last.
+  - **Transcript pointer:** an optional `source` field, filled by the new `fingerprint` command. `get --check-state` reports the transcript as unchanged, grown, changed, compressed or missing. It hashes the file and never reads its content as instructions.
+  - **Backwards compatibility:** v1 records stay readable. A v1 handoff can be continued with a v2 revision.
+  - **Skills:** both skills are rewritten. The schema validator gains `minItems`, `maxItems`, `maxLength`, `minimum`, and `oneOf` used only as a union discriminated by `schema_version`.
+  - **Installer:** installs from Node 0.1.2 now upgrade in place. Before this change they would have been rejected as an unknown version.
+- **Why:** the earlier record was scoped to one topic and dropped the parent issue. On the eval below it was longer than an unaided handoff and scored lower.
+- **Survey (reported, not measured):** about 25 handoff and compaction implementations, read from source. Ideas taken:
+  - OpenCode's goal decomposition with Completed/Active/Blocked, its update-not-rewrite prompt and its terse rules;
+  - Codex keeping the user's own words;
+  - dotclaude's planted-fact method;
+  - amal-david/claude-to-codex's transcript pointer with a hash;
+  - "do not redo", "do not retry" and the warning that a belief written as fact becomes a false premise, from community skills.
+- **Eval (measured, 30 October 2026):**
+  - **Setup:** `evals/handoff/long-conversation.md` is synthetic: 1,184 words, one migration with four sub-issues, a correction, a rejected approach and linked PRs, ending inside one sub-issue. `long-conversation-probes.json` holds 17 planted-fact probes and a pass rule fixed before the v2 runs.
+  - **Writers and readers:** Opus 5.5 writers, two per condition. Sonnet 5.5 readers saw only the brief. The plain baseline prompt asked the agent to write a handoff with no skill.
+  - **Grading:** one Opus 5.5 grader scored all six answer sheets under shuffled labels, without knowing which condition wrote which.
+  - **Rule change:** after a first grading round the guard rule was clarified to "fails when it scores 0". That changed no order.
+
+  | Condition | Words | Parent /7 | Focus /7 | Guard /3 | Total /17 | Pass |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | v1 skill, run A | 1504 | 4.5 | 7 | 3 | 14.5 | no |
+  | v1 skill, run B | 1371 | 3.5 | 6 | 3 | 12.5 | no |
+  | Plain handoff, run A | 812 | 6 | 7 | 2.5 | 15.5 | yes |
+  | Plain handoff, run B | 869 | 6.5 | 7 | 2.5 | 16 | yes |
+  | v2 skill, run A | 829 | 6.5 | 7 | 3 | 16.5 | yes |
+  | v2 skill, run B | 754 | 7 | 7 | 3 | 17 | yes |
+
+  - **v1:** both runs left out the blocked backfill and the parked dashboard, as the v1 skill instructs.
+  - **v2:** kept every parent fact in one run and all but half a point in the other, using about 45% fewer words than v1.
+  - **v2 against the plain handoff:** the lead is 0.5–1.5 points with n=2 on one conversation. That is not a demonstrated improvement.
+  - **Writing cost:** harness-reported subagent token totals were roughly the same for v1 (68–69k) and v2 (68–69k), against 57k for the plain baseline. Most of each total is fixed session context. The saving is in what the next agent reads, not in writing.
+- **Fixes after the measured runs:**
+  - Both v2 writers' first drafts failed validation on item shapes. The skill now shows each field's shape and states that `focus.item` must repeat a `work_state` item exactly.
+  - The renderer now punctuates a rejected reason before "Do not retry."
+  - The 150–500 word target was replaced with "under about 700" for long multi-issue conversations, because the measured runs rendered 682–829 words.
+  - A confirmation run of the revised skill (682 words) did not need the reference. Its first draft still failed on the focus match that the skill now states. The same grader, applying its earlier judgement calls, scored it 17/17. It saw this sheet later and on its own, not shuffled with the other six.
+- **Checks** (30 October 2026, Linux x64 container, Node 22):
+  - `npm test` 51/51;
+  - `npm run build:native`;
+  - `claude plugin validate .` passes;
+  - handoff skill frontmatter checked (names, description lengths, `metadata.internal`);
+  - `build-release` produced the 0.2.0 linux-x64 artifacts, and the built single-file installer installed into a scratch target whose helper reports 0.2.0 and drafts a v2 template.
+  - Not run here: macOS, and a real Codex or Claude transcript (fingerprint is tested on a synthetic JSONL file).
+- **Limits:**
+  - One synthetic conversation, two runs per condition, model-graded.
+  - The resume skill's transcript-reading guidance is untested with real Codex or Claude transcripts.
+  - Reading line ranges of a compressed `.zst` rollout depends on `zstd` being installed.
+  - Linked PRs are read with whatever access the resuming agent already has. The helper never fetches.
+- **Independent review:** REVIEW_RESULT
+
 ## One root plugin, skills 0.2.0 — 15 October 2026
 
 - **Change:** the repository root is now a single plugin, `skills@skills`, laid out like addyosmani/agent-skills and obra/superpowers (both checked on GitHub: one root plugin each, with `skills/` at the top). Before, it shipped two plugins under `plugins/`.
