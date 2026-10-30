@@ -296,8 +296,8 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "base_commit": {"$ref": "#/$defs/nullableString"},
-            "branch": {"$ref": "#/$defs/nullableString"},
+            "base_commit": {"$ref": "#/$defs/nullableLine"},
+            "branch": {"$ref": "#/$defs/nullableLine"},
             "relevant_paths": {
               "type": "array",
               "maxItems": 50,
@@ -331,7 +331,7 @@
               "command": {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "^[^\\r\\n]*$"},
               "result": {"enum": ["pass", "fail", "unknown"]},
               "summary": {"type": "string", "minLength": 1, "maxLength": 400, "pattern": "^[^\\r\\n]*$"},
-              "commit": {"$ref": "#/$defs/nullableString"}
+              "commit": {"$ref": "#/$defs/nullableLine"}
             }
           }
         },
@@ -345,13 +345,13 @@
           "additionalProperties": false,
           "required": ["agent", "path"],
           "properties": {
-            "agent": {"$ref": "#/$defs/nullableString"},
-            "session_id": {"$ref": "#/$defs/nullableString"},
-            "path": {"$ref": "#/$defs/nullableString"},
+            "agent": {"$ref": "#/$defs/nullableLine"},
+            "session_id": {"$ref": "#/$defs/nullableLine"},
+            "path": {"$ref": "#/$defs/nullableLine"},
             "sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
             "bytes": {"type": ["integer", "null"], "minimum": 0},
             "lines": {"type": ["integer", "null"], "minimum": 0},
-            "format": {"$ref": "#/$defs/nullableString"}
+            "format": {"$ref": "#/$defs/nullableLine"}
           }
         },
         "next_action": {"type": "string", "minLength": 1, "maxLength": 600, "pattern": "^[^\\r\\n]*$"}
@@ -359,6 +359,7 @@
     },
     "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,79}$"},
     "nullableString": {"type": ["string", "null"]},
-    "strings": {"type": "array", "items": {"type": "string", "minLength": 1}}
+    "strings": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "nullableLine": {"type": ["string", "null"], "pattern": "^[^\\r\\n]*$"}
   }
 }

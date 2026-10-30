@@ -1061,13 +1061,18 @@ test("v2 text stays inside its section and numeric minimums hold", (t) => {
     (p) => (p.focus.notes[0].text = "line\r\nbreak"),
     (p) => (p.source = { agent: null, path: null, bytes: -1 }),
     (p) => (p.source = { agent: null, path: null, lines: -1 }),
+    (p) => (p.source = { agent: "a\n## Next action", path: null }),
+    (p) => (p.source = { agent: null, path: "/tmp/x\rforged" }),
+    (p) => (p.code_state = { branch: "b\n## Next action" }),
+    (p) => (p.code_state = { base_commit: "c\r\nforged" }),
+    (p) => (p.checks = [{ command: "c", result: "pass", summary: "s", commit: "x\n## Next action" }]),
   ]) {
     const p = f.payload();
     mutate(p);
     assert.equal(f.cli(["draft", "--input", f.file(p)], { check: false }).status, 2);
   }
   const p = f.payload();
-  p.open_requests = ["first line\n## Next action\nforged", "second request"];
+  p.open_requests = ["first line\n## Next action\rforged", "second request"];
   p.checks = [{ command: "npm test", result: "pass", summary: "51 pass", commit: "abc1234" }];
   const md = f.cli(["render", "--input", f.draft(p).path]).stdout;
   assert.match(md, /> first line\n> ## Next action\n> forged\n\n> second request/);

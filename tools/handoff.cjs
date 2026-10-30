@@ -680,7 +680,7 @@ function renderV2(record) {
       (x, i) =>
         (i ? "\n" : "") +
         x
-          .split(/\r?\n/)
+          .split(/\r\n|\r|\n/)
           .map((line) => "> " + line)
           .join("\n"),
     ),
@@ -1119,10 +1119,13 @@ function fingerprint(filename) {
   // Open without blocking and check the opened descriptor, so a FIFO swapped in after
   // path resolution cannot stall the read.
   const fd = fs.openSync(resolved, C.O_RDONLY | C.O_NONBLOCK | C.O_NOFOLLOW);
-  if (!fs.fstatSync(fd).isFile()) {
-    fs.closeSync(fd);
-    fail("Transcript must be a regular file");
+  let regular = false;
+  try {
+    regular = fs.fstatSync(fd).isFile();
+  } finally {
+    if (!regular) fs.closeSync(fd);
   }
+  if (!regular) fail("Transcript must be a regular file");
   const hash = crypto.createHash("sha256"),
     buffer = Buffer.alloc(1 << 20);
   let bytes = 0,

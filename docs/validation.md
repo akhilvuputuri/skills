@@ -66,6 +66,12 @@
   - **Low (docs):** helpers older than 0.2.0 fail on a store holding a v2 record. The reference now says to upgrade every agent sharing a store together.
   - **Design note:** v2 `checks` gained an optional `commit`.
   - **Regression check:** the two new tests fail on `5f90c87` and pass on the fix.
+- **Re-review** (Opus 5.5, same reviewer) of `53bf14f`: **REQUEST CHANGES**.
+  - **Confirmed fixed:** `minimum`; the transcript statuses, including `~` expansion end to end; the non-blocking `fingerprint`; quoting of verbatim requests; and the docs.
+  - **Low–medium:** v2 fields that used the shared `nullableString` were still multi-line, so a forged heading could render. Affected fields: `code_state.branch`, `code_state.base_commit`, all `source` strings, and the new `checks.commit`. They now use a single-line `nullableLine` definition (v1 is unchanged). The test covers each one.
+  - **Low:** a bare carriage return in a verbatim request was not split. It is now. Tested.
+  - **Not blocking:** the `fstat` descriptor leak is closed. `U+2028` is accepted, which is harmless for Markdown.
+  - **Limit:** helper-managed `project` fields keep the v1 definition.
   - Re-review of the fixed head: REREVIEW_RESULT
 
 ## One root plugin, skills 0.2.0 — 15 October 2026
